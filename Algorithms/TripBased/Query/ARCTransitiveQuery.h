@@ -280,7 +280,17 @@ private:
             }
         }
         reachedRoutes.sort();
-        for (const RouteId route : reachedRoutes) {
+        auto& valuesToLoopOver = reachedRoutes.getValues();
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+            #ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(&(routeLabels[valuesToLoopOver[i + 4]]));
+                __builtin_prefetch(&(data.firstTripOfRoute[valuesToLoopOver[i + 4]]));
+            }
+            #endif
+
+            const RouteId route = valuesToLoopOver[i];
             const RouteLabel& label = routeLabels[route];
             const StopIndex endIndex = label.end();
             const TripId firstTrip = data.firstTripOfRoute[route];
@@ -328,6 +338,13 @@ private:
             // Evaluate final transfers in order to check if the target is
             // reachable
             for (size_t i = roundBegin; i < roundEnd; ++i) {
+                #ifdef ENABLE_PREFETCH
+                if (i + 4 < roundEnd) {
+                    __builtin_prefetch(&(queue[i + 4]));
+                    __builtin_prefetch(&(data.arrivalEvents[queue[i + 4].begin]));
+                }
+                #endif
+
                 const TripLabel& label = queue[i];
                 profiler.countMetric(METRIC_SCANNED_TRIPS);
                 for (StopEventId j = label.begin; j < label.end; j++) {
@@ -342,6 +359,13 @@ private:
             }
             // Find the range of transfers for each trip
             for (size_t i = roundBegin; i < roundEnd; ++i) {
+                #ifdef ENABLE_PREFETCH
+                if (i + 4 < roundEnd) {
+                    __builtin_prefetch(&(queue[i + 4]));
+                    __builtin_prefetch(&(data.arrivalEvents[queue[i + 4].begin]));
+                }
+                #endif
+
                 TripLabel& label = queue[i];
                 for (StopEventId j = label.begin; j < label.end; j++) {
                     if (data.arrivalEvents[j].arrivalTime >= minArrivalTime)

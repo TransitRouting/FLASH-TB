@@ -25,7 +25,12 @@
 #include "../../../DataStructures/RAPTOR/Entities/RouteSegment.h"
 #include "../../../DataStructures/TripBased/Data.h"
 #include "../../../Helpers/String/String.h"
+
+#ifdef USE_SIMD
+#include "../Query/ProfileReachedIndexSIMD.h"
+#else
 #include "../Query/ProfileReachedIndex.h"
+#endif
 #include "../Query/ReachedIndex.h"
 
 namespace TripBased {
@@ -234,7 +239,16 @@ public:
             }
         }
         reachedRoutes.sort();
-        for (const RouteId route : reachedRoutes) {
+        auto& valuesToLoopOver = reachedRoutes.getValues();
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+            #ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(&(routeLabels[valuesToLoopOver[i + 4]]));
+                __builtin_prefetch(&(data.firstTripOfRoute[valuesToLoopOver[i + 4]]));
+            }
+            #endif
+            const RouteId route = valuesToLoopOver[i];
             const RouteLabel& label = routeLabels[route];
             const StopIndex endIndex = label.end();
             const TripId firstTrip = data.firstTripOfRoute[route];
@@ -326,6 +340,13 @@ private:
             // Evaluate final transfers in order to check if the target is
             // reachable
             for (size_t i = roundBegin; i < roundEnd; ++i) {
+                #ifdef ENABLE_PREFETCH
+                if (i + 4 < roundEnd) {
+                    __builtin_prefetch(&(queue[i + 4]));
+                    __builtin_prefetch(&(data.arrivalEvents[queue[i + 4].begin]));
+                }
+                #endif
+
                 const TripLabel& label = queue[i];
                 for (StopEventId j = label.begin; j < label.end; ++j) {
                     stop = data.arrivalEvents[j].stop;
@@ -334,8 +355,7 @@ private:
                             "This stop is not represented in the transfergraph!\n");
                         for (const Edge edge : data.raptorData.transferGraph.edgesFrom(stop)) {
                             transferStop = data.raptorData.transferGraph.get(ToVertex, edge);
-                            if (!data.isStop(transferStop))
-                                continue;
+                            AssertMsg(!data.isStop(transferStop), "Stop is not a stop!");
                             travelTime = data.raptorData.transferGraph.get(TravelTime, edge);
                             addTargetLabel(StopId(transferStop), data.arrivalEvents[j].arrivalTime + travelTime, i, n, j);
                         }
@@ -343,6 +363,13 @@ private:
                 }
             }
             for (size_t i = roundBegin; i < roundEnd; ++i) {
+                #ifdef ENABLE_PREFETCH
+                if (i + 4 < roundEnd) {
+                    __builtin_prefetch(&(queue[i + 4]));
+                    __builtin_prefetch(&(data.arrivalEvents[queue[i + 4].begin]));
+                }
+                #endif
+
                 TripLabel& label = queue[i];
                 for (StopEventId j = label.begin; j < label.end; ++j) {
                     if (data.arrivalEvents[j].arrivalTime > minArrivalTimeFastLookUp[data.arrivalEvents[j].stop][n])
@@ -500,7 +527,13 @@ private:
 
     std::vector<TripLabel> queue;
     size_t queueSize;
+
+#ifdef USE_SIMD
+    ProfileReachedIndexSIMD profileReachedIndex;
+#else
     ProfileReachedIndex profileReachedIndex;
+#endif
+
     ReachedIndex runReachedIndex;
 
     // for every stop

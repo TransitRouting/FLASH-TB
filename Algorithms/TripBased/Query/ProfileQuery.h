@@ -25,7 +25,13 @@
 #include "../../../DataStructures/RAPTOR/Entities/RouteSegment.h"
 #include "../../../DataStructures/TripBased/Data.h"
 #include "../../../Helpers/String/String.h"
+
+#ifdef USE_SIMD
+#include "ProfileReachedIndexSIMD.h"
+#else
 #include "ProfileReachedIndex.h"
+#endif
+
 #include "Profiler.h"
 
 namespace TripBased {
@@ -562,7 +568,12 @@ private:
     std::vector<TripLabel> queue;
     std::vector<EdgeRange> edgeRanges;
     size_t queueSize;
+
+#ifdef USE_SIMD
+    ProfileReachedIndexSIMD reachedIndex;
+#else
     ProfileReachedIndex reachedIndex;
+#endif
 
     std::vector<TargetLabel> targetLabels;
     std::vector<int> minArrivalTimeFastLookUp;

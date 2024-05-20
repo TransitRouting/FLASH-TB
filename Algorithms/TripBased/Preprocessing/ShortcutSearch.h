@@ -288,7 +288,17 @@ private:
     inline void scanRoutes() noexcept
     {
         static_assert((CURRENT == 1) | (CURRENT == 2), "Invalid round!");
-        for (const RouteId route : routesServingUpdatedStops.getKeys()) {
+        auto& valuesToLoopOver = routesServingUpdatedStops.getKeys();
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+
+            #ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(&routesServingUpdatedStops[valuesToLoopOver[i + 4]]);
+                __builtin_prefetch(data.stopArrayOfRoute(valuesToLoopOver[i + 4]));
+            }
+            #endif
+            const RouteId route = valuesToLoopOver[i];
             const StopIndex stopIndex = routesServingUpdatedStops[route];
             RAPTOR::TripIterator tripIterator = data.getTripIterator(route, stopIndex);
             StopIndex parentIndex = stopIndex;
@@ -405,7 +415,16 @@ private:
     inline void relaxInitialTransfers() noexcept
     {
         AssertMsg(stopsUpdatedByTransfer.empty(), "stopsUpdatedByTransfer is not empty!");
-        for (const StopId stop : stopsReachedByDirectTransfer) {
+        auto& valuesToLoopOver = stopsReachedByDirectTransfer;
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+
+            #ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(&directTransferArrivalLabels[valuesToLoopOver[i + 4]]);
+            }
+            #endif
+            const StopId stop = valuesToLoopOver[i];
             const int newArrivalTime = sourceDepartureTime + directTransferArrivalLabels[stop].arrivalTime;
             arrivalByEdge0(stop, newArrivalTime);
             stopsUpdatedByTransfer.insert(stop);
@@ -417,7 +436,16 @@ private:
         AssertMsg(stopsUpdatedByTransfer.empty(), "stopsUpdatedByTransfer is not empty!");
 
         shortcutCandidatesInQueue = 0;
-        for (const StopId stop : stopsUpdatedByRoute) {
+        auto& valuesToLoopOver = stopsUpdatedByRoute.getValues();
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+
+            #ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(&oneTripArrivalLabels[valuesToLoopOver[i + 4]]);
+            }
+            #endif
+            const StopId stop = valuesToLoopOver[i];
             oneTripQueue.update(&(oneTripArrivalLabels[stop]));
             if (oneTripTransferParent[stop] != noStopEvent)
                 shortcutCandidatesInQueue++;
@@ -476,7 +504,17 @@ private:
     {
         AssertMsg(stopsUpdatedByTransfer.empty(), "stopsUpdatedByTransfer is not empty!");
 
-        for (const StopId stop : stopsUpdatedByRoute) {
+        auto& valuesToLoopOver = stopsUpdatedByRoute.getValues();
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+
+            #ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(&twoTripsArrivalLabels[valuesToLoopOver[i + 4]]);
+                __builtin_prefetch(&twoTripsRouteParent[valuesToLoopOver[i + 4]]);
+            }
+            #endif
+            const StopId stop = valuesToLoopOver[i];
             twoTripsQueue.update(&(twoTripsArrivalLabels[stop]));
             const StopId routeParent = twoTripsRouteParent[stop];
             if (data.isStop(routeParent)) { // This is the only place where
