@@ -19,12 +19,15 @@
 **********************************************************************************/
 #pragma once
 
+#include "../../../DataStructures/Container/Parent.h"
 #include "../../../DataStructures/Container/Set.h"
 #include "../../../DataStructures/RAPTOR/Entities/ArrivalLabel.h"
 #include "../../../DataStructures/RAPTOR/Entities/Journey.h"
 #include "../../../DataStructures/RAPTOR/Entities/RouteSegment.h"
 #include "../../../DataStructures/TripBased/Data.h"
 #include "../../../Helpers/String/String.h"
+
+#include "SplitStopEventGraph.h"
 
 #ifdef USE_SIMD
 #include "../Query/ProfileReachedIndexSIMD.h"
@@ -34,6 +37,43 @@
 #include "../Query/ReachedIndex.h"
 
 namespace TripBased {
+
+struct TripSegment {
+    uint32_t tripId : 24;
+    uint32_t stopIndex : 8;
+
+    TripSegment(uint32_t tripId = 0, uint8_t stopIndex = 0)
+        : tripId(tripId)
+        , stopIndex(stopIndex)
+    {
+        AssertMsg(tripId <= 0xFFFFFF, "TripId is out of bounds!"); // 24-bit max value = 16,777,215
+        AssertMsg(stopIndex <= 0xFF, "StopId is out of bounds!"); // 8-bit max value = 255
+    }
+
+    uint32_t getTripId() const
+    {
+        return tripId;
+    }
+
+    void setTripId(uint32_t newTripId)
+    {
+        AssertMsg(newTripId <= 0xFFFFFF, "TripId is out of bounds!"); // 24-bit max value = 16,777,215
+        tripId = newTripId;
+    }
+
+    uint8_t getStopIndex() const
+    {
+        return stopIndex;
+    }
+
+    void setStopIndex(uint8_t newStopIndex)
+    {
+        AssertMsg(newStopIndex <= 0xFF, "StopId is out of bounds!"); // 8-bit max value = 255
+        stopIndex = newStopIndex;
+    }
+};
+
+static_assert(sizeof(TripSegment) == 4);
 
 struct TripStopIndex {
     TripStopIndex(const TripId trip = noTripId, const StopIndex stopIndex = StopIndex(-1), const int depTime = never)
@@ -61,7 +101,7 @@ struct RouteLabel {
     std::vector<int> departureTimes;
 };
 
-class CalculateARCFlagsProfile {
+class CanonicalOneToAllProfileTB {
 private:
     struct TripLabel {
         TripLabel(const StopEventId begin = noStopEvent, const StopEventId end = noStopEvent,
@@ -101,10 +141,9 @@ private:
     };
 
     struct TargetLabel {
-        TargetLabel(const long arrivalTime = INFTY, const long departureTime = INFTY, const u_int32_t parent = -1,
+        TargetLabel(const long arrivalTime = INFTY, const u_int32_t parent = -1,
             const StopEventId fromStopEventId = noStopEvent, const int run = -1)
             : arrivalTime(arrivalTime)
-            , departureTime(departureTime)
             , parent(parent)
             , fromStopEventId(fromStopEventId)
             , run(run)
@@ -114,21 +153,19 @@ private:
         void clear()
         {
             arrivalTime = INFTY;
-            departureTime = INFTY;
             parent = -1;
             fromStopEventId = noStopEvent;
             run = -1;
         }
 
         long arrivalTime;
-        long departureTime;
         u_int32_t parent;
         StopEventId fromStopEventId;
         int run;
     };
 
 public:
-    CalculateARCFlagsProfile(Data& data, std::vector<std::vector<uint8_t>>& uint8Flags,
+    CanonicalOneToAllProfileTB(Data& data, std::vector<std::vector<uint8_t>>& uint8Flags,
         std::vector<std::vector<TripStopIndex>>& collectedDepTimes,
         std::vector<TripBased::RouteLabel>& routeLabels)
         : data(data)
@@ -145,6 +182,8 @@ public:
         , edgeLabels(data.stopEventGraph.numEdges())
         , sourceStop(noStop)
         , collectedDepTimes(collectedDepTimes)
+        , parentOfTrip(16, data.numberOfTrips())
+        , parentOfStop(16, data.numberOfStops())
         , tripLabelEdge(data.numberOfStopEvents(), std::make_pair(noEdge, noStopEvent))
         , routeLabels(routeLabels)
         , previousTripLookup(data.numberOfTrips())
@@ -442,29 +481,6 @@ private:
         profileReachedIndex.update(label.trip, StopIndex(label.stopEvent - label.firstEvent), n + 1);
     }
 
-    // TODO
-    inline bool addArrival(const StopId stop, const int newArrivalTime, const int newDepartureTime, const TripId trip, const int n, const int k) noexcept
-    {
-        if (targetLabels[stop][n].arrivalTime == newArrivalTime && targetLabels[stop][n].departureTime == newDepartureTime) // (T1)
-            return false;
-        if (targetLabels[stop][n].arrivalTime < newArrivalTime) // (T2a)
-            return false;
-        if (n > 0 && targetLabels[stop][n - 1].arrivalTime <= newArrivalTime) // (T2b)
-            return false;
-
-        targetLabels[stop][n].arrivalTime = newArrivalTime;
-        targetLabels[stop][n].departureTime = newDepartureTime;
-
-        parent.update(stop, n, trip, runReachedIndex[trip], k);
-
-#pragma omp simd
-        for (int i = n + 1; i < 16; ++i) {
-            if (targetLabels[stop][i].arrivalTime > targetLabels[stop][n].arrivalTime) {
-                targetLabels[stop][i].clear();
-            }
-        }
-    }
-
     inline bool addTargetLabel(const StopId stop, const int newArrivalTime, const u_int32_t parent = -1,
         const u_int8_t n = 0, const StopEventId fromStopEventId = noStopEvent) noexcept
     {
@@ -578,6 +594,10 @@ private:
     StopId sourceStop;
 
     std::vector<std::vector<TripStopIndex>>& collectedDepTimes;
+
+    // parents
+    Parent<StopId> parentOfTrip;
+    Parent<TripSegment> parentOfStop;
 
     // this is to get the edge and the fromStopEventId  of a triplabel faster
     std::vector<std::pair<Edge, StopEventId>> tripLabelEdge;

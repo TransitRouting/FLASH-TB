@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cassert>
 #include <emmintrin.h>
 #include <vector>
-#include <cassert>
 
 #include "../../../DataStructures/TripBased/Data.h"
 #include "../../../Helpers/aligned_allocator.h"
@@ -70,7 +70,8 @@ public:
         }
     };
 
-    inline void clear() noexcept { 
+    inline void clear() noexcept
+    {
         if (timestamp == 0) {
             labels = defaultLabels;
             std::fill(timestamps.begin(), timestamps.end(), 0);
@@ -102,7 +103,7 @@ public:
         // Iterate over all trips either until the last trip OR if we already have a
         // trip with a position at least as good
         for (TripId tr(trip);
-             tr < data.firstTripOfRoute[data.routeOfTrip[trip]+1] && getPosition(tr, round) > position;
+             tr < data.firstTripOfRoute[data.routeOfTrip[trip] + 1] && getPosition(tr, round) > position;
              ++tr)
             labels[tr].mValues = _mm_min_epu8(labels[tr].mValues, FILTER);
     }

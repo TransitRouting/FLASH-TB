@@ -4,7 +4,7 @@
 #include <string>
 
 #include "../../Algorithms/TripBased/Preprocessing/ARCFlagTBBuilder.h"
-/* #include "../../Algorithms/TripBased/Preprocessing/ComputeARCFlagsProfile.h" */
+#include "../../Algorithms/TripBased/Preprocessing/CanonicalOneToAllProfileTB.h"
 #include "../../Algorithms/TripBased/Preprocessing/CompressARCFlags.h"
 #include "../../Algorithms/TripBased/Preprocessing/RangeRAPTOR/ComputeARCFlagsProfileRAPTOR.h"
 #include "../../Algorithms/TripBased/Preprocessing/StopEventGraphBuilder.h"

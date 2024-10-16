@@ -254,12 +254,12 @@ public:
         auto& valuesToLoopOver = reachedRoutes.getValues();
 
         for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
-            #ifdef ENABLE_PREFETCH
+#ifdef ENABLE_PREFETCH
             if (i + 4 < valuesToLoopOver.size()) {
                 __builtin_prefetch(&(routeLabels[valuesToLoopOver[i + 4]]));
                 __builtin_prefetch(&(data.firstTripOfRoute[valuesToLoopOver[i + 4]]));
             }
-            #endif
+#endif
 
             const RouteId route = valuesToLoopOver[i];
             const RouteLabel& label = routeLabels[route];
@@ -424,12 +424,12 @@ private:
             // Evaluate final transfers in order to check if the target is
             // reachable
             for (size_t i = roundBegin; i < roundEnd; ++i) {
-                #ifdef ENABLE_PREFETCH
+#ifdef ENABLE_PREFETCH
                 if (i + 4 < roundEnd) {
                     __builtin_prefetch(&(queue[i + 4]));
                     __builtin_prefetch(&(data.arrivalEvents[queue[i + 4].begin]));
                 }
-                #endif
+#endif
 
                 const TripLabel& label = queue[i];
                 profiler.countMetric(METRIC_SCANNED_TRIPS);
@@ -446,12 +446,12 @@ private:
             }
             // Find the range of transfers for each trip
             for (size_t i = roundBegin; i < roundEnd; i++) {
-                #ifdef ENABLE_PREFETCH
+#ifdef ENABLE_PREFETCH
                 if (i + 4 < roundEnd) {
                     __builtin_prefetch(&(queue[i + 4]));
                     __builtin_prefetch(&(data.arrivalEvents[queue[i + 4].begin]));
                 }
-                #endif
+#endif
 
                 TripLabel& label = queue[i];
                 for (StopEventId j = label.begin; j < label.end; j++) {
