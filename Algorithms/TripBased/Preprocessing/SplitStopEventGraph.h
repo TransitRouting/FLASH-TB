@@ -1,77 +1,71 @@
 #pragma once
 
 #include <cassert>
+#include <iostream> // For std::cout
 
 namespace TripBased {
 
 class SplitStopEventGraph {
 public:
-    SplitStopEventGraph(const Data& data, const int k = 0)
+    SplitStopEventGraph(const Data& data)
         : data(data)
-        , k(k)
-        , toAdjLocal(data.numberOfStopEvents() + 1, 0)
-        , toAdjTransfer(data.numberOfStopEvents() + 1, 0)
-        , toLocalVertex()
-        , toTransferVertex()
-        , localFlags()
-        , transfeFlags()
+        , k(data.raptorData.numberOfPartitions)
         , numVertices(data.numberOfStopEvents())
         , numLocalEdges(0)
         , numTransferEdges(0)
     {
-        incorperateGraph();
+        incorporateGraph();
     };
 
-    inline size_t beginLocalEdgeFrom(const size_t vertex)
+    inline size_t beginLocalEdgeFrom(const size_t vertex) const
     {
         assert(isVertex(vertex) || vertex == numVertices);
-
         return toAdjLocal[vertex];
     }
 
-    inline size_t beginTransferEdgeFrom(const size_t vertex)
+    inline size_t beginTransferEdgeFrom(const size_t vertex) const
     {
         assert(isVertex(vertex) || vertex == numVertices);
-
         return toAdjTransfer[vertex];
     }
 
-    inline size_t numberOfLocalEdges(const size_t vertex)
+    inline size_t numberOfLocalEdges(const size_t vertex) const
     {
         assert(isVertex(vertex));
-
         return beginLocalEdgeFrom(vertex + 1) - beginLocalEdgeFrom(vertex);
     }
 
-    inline size_t numberOfTransferEdges(const size_t vertex)
+    inline size_t numberOfTransferEdges(const size_t vertex) const
     {
         assert(isVertex(vertex));
-
         return beginTransferEdgeFrom(vertex + 1) - beginTransferEdgeFrom(vertex);
     }
 
-    inline bool isVertex(const size_t vertex)
+    inline bool isVertex(const size_t vertex) const
     {
         return (vertex < numVertices);
     }
 
-private:
-    void incorperateGraph()
+    // Method to show detailed information
+    void showInfo() const
     {
-        toAdjLocal.assign(data.numberOfStopEvents() + 1, 0);
-        toAdjTransfer.assign(data.numberOfStopEvents() + 1, 0);
-        toLocalVertex.clear();
-        toTransferVertex.clear();
-        localFlags.clear();
-        transfeFlags.clear();
-        numVertices = data.numberOfStopEvents();
-        numLocalEdges = 0;
-        numTransferEdges = 0;
+        std::cout << "SplitStopEventGraph Info:\n";
+        std::cout << "   Number of vertices: " << numVertices << "\n";
+        std::cout << "   Number of local edges: " << numLocalEdges << "\n";
+        std::cout << "   Number of transfer edges: " << numTransferEdges << "\n";
+        std::cout << "   Total number of edges: " << (numLocalEdges + numTransferEdges) << "\n";
+        std::cout << "   Number of partitions (k): " << k << "\n";
+    }
+
+private:
+    void incorporateGraph()
+    {
+        toAdjLocal.assign(numVertices + 1, 0);
+        toAdjTransfer.assign(numVertices + 1, 0);
 
         toLocalVertex.reserve(data.stopEventGraph.numEdges());
         toTransferVertex.reserve(data.stopEventGraph.numEdges());
 
-        // fill the transfers
         size_t runningSumLocal = 0;
         size_t runningSumTransfer = 0;
 
@@ -94,18 +88,14 @@ private:
             }
         }
 
-        toLocalVertex.shrink_to_fit();
-        toTransferVertex.shrink_to_fit();
-
         toAdjLocal[numVertices] = runningSumLocal;
         toAdjTransfer[numVertices] = runningSumTransfer;
 
         numLocalEdges = runningSumLocal;
         numTransferEdges = runningSumTransfer;
 
-        // set empty flags
         localFlags.resize(numLocalEdges, std::vector<bool>(k, false));
-        transfeFlags.resize(numTransferEdges, std::vector<bool>(k, false));
+        transferFlags.resize(numTransferEdges, std::vector<bool>(k, false));
     }
 
     const Data& data;
@@ -118,10 +108,11 @@ private:
     std::vector<size_t> toTransferVertex;
 
     std::vector<std::vector<bool>> localFlags;
-    std::vector<std::vector<bool>> transfeFlags;
+    std::vector<std::vector<bool>> transferFlags;
 
     size_t numVertices;
     size_t numLocalEdges;
     size_t numTransferEdges;
 };
+
 }

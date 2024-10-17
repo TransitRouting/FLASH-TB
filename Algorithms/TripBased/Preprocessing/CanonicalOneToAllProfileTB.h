@@ -141,9 +141,10 @@ private:
     };
 
     struct TargetLabel {
-        TargetLabel(const long arrivalTime = INFTY, const u_int32_t parent = -1,
+        TargetLabel(const long arrivalTime = INFTY, const long departureTime = INFTY, const u_int32_t parent = -1,
             const StopEventId fromStopEventId = noStopEvent, const int run = -1)
             : arrivalTime(arrivalTime)
+            , departureTime(departureTime)
             , parent(parent)
             , fromStopEventId(fromStopEventId)
             , run(run)
@@ -153,22 +154,25 @@ private:
         void clear()
         {
             arrivalTime = INFTY;
+            departureTime = INFTY;
             parent = -1;
             fromStopEventId = noStopEvent;
             run = -1;
         }
 
         long arrivalTime;
+        long departureTime;
         u_int32_t parent;
         StopEventId fromStopEventId;
         int run;
     };
 
 public:
-    CanonicalOneToAllProfileTB(Data& data, std::vector<std::vector<uint8_t>>& uint8Flags,
+    CanonicalOneToAllProfileTB(Data& data, const SplitStopEventGraph& splitEventGraph, std::vector<std::vector<uint8_t>>& uint8Flags,
         std::vector<std::vector<TripStopIndex>>& collectedDepTimes,
         std::vector<TripBased::RouteLabel>& routeLabels)
         : data(data)
+        , splitEventGraph(splitEventGraph)
         , uint8Flags(uint8Flags)
         , numberOfPartitions(data.raptorData.numberOfPartitions)
         , transferFromSource(data.numberOfStops(), INFTY)
@@ -558,6 +562,7 @@ private:
 
 private:
     Data& data;
+    const SplitStopEventGraph& splitEventGraph;
 
     std::vector<std::vector<uint8_t>>& uint8Flags;
 

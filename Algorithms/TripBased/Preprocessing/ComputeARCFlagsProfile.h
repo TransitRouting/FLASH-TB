@@ -27,7 +27,8 @@
 #include "../../../Helpers/Console/Progress.h"
 #include "../../../Helpers/MultiThreading.h"
 #include "../../../Helpers/String/String.h"
-#include "CalculateARCFlagsProfileOLD.h"
+
+#include "CanonicalOneToAllProfileTB.h.h"
 
 namespace TripBased {
 
@@ -81,7 +82,7 @@ public:
             pinThreadToCoreId((threadId * pinMultiplier) % numCores);
             AssertMsg(omp_get_num_threads() == numberOfThreads, "Number of threads is " << omp_get_num_threads() << ", but should be " << numberOfThreads << "!");
 
-            CalculateARCFlagsProfile calcARCFlag(data, uint8InitialFlags, collectedDepTimes, minDepartureTime,
+            CanonicalOneToAllProfileTB calcARCFlag(data, uint8InitialFlags, collectedDepTimes, minDepartureTime,
                 maxDepartureTime, routeLabels);
 
 // one thread handles one stop

@@ -144,6 +144,8 @@ public:
         const bool compress = getParameter<bool>("Compressing");
         const size_t pinMultiplier = getParameter<size_t>("Pin multiplier");
 
+        std::cout << "Verbose: " << verbose << " and Compress: " << compress << std::endl;
+
         TripBased::Data trip(inputFile);
         trip.printInfo();
 
@@ -153,15 +155,13 @@ public:
         }
 
         TripBased::ARCFlagTBBuilder arcFlagComputer(trip, getNumberOfThreads(), pinMultiplier);
-        arcFlagComputer.computeARCFlags(verbose);
-        /* TripBased::ComputeARCFlagsProfile arcFlagComputer(trip, getNumberOfThreads(), pinMultiplier); */
-        /* arcFlagComputer.computeARCFlags(true, true, verbose); */
+        /* arcFlagComputer.computeARCFlags(verbose); */
 
-        trip.serialize(outputFile);
+        /* trip.serialize(outputFile); */
 
-        if (compress) {
-            TripBased::CompressARCFlags(inputFile);
-        }
+        /* if (compress) { */
+        /*     TripBased::CompressARCFlags(inputFile); */
+        /* } */
     }
 
 private:

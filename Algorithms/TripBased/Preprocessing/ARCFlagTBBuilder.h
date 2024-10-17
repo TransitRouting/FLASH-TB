@@ -27,8 +27,9 @@
 #include "../../../Helpers/Console/Progress.h"
 #include "../../../Helpers/MultiThreading.h"
 #include "../../../Helpers/String/String.h"
-/* #include "CalculateARCFlagsProfile.h" */
+
 #include "CanonicalOneToAllProfileTB.h"
+#include "SplitStopEventGraph.h"
 
 namespace TripBased {
 
@@ -36,6 +37,7 @@ class ARCFlagTBBuilder {
 public:
     ARCFlagTBBuilder(Data& data, const int numberOfThreads, const int pinMultiplier = 1)
         : data(data)
+        , splitEventGraph(data)
         , numberOfThreads(numberOfThreads)
         , pinMultiplier(pinMultiplier)
         , routeLabels(data.numberOfRoutes())
@@ -59,6 +61,8 @@ public:
                 }
             }
         }
+
+        splitEventGraph.showInfo();
     }
 
     void computeARCFlags(const bool verbose = true)
@@ -84,8 +88,8 @@ public:
             pinThreadToCoreId((threadId * pinMultiplier) % numCores);
             AssertMsg(omp_get_num_threads() == numberOfThreads, "Number of threads is " << omp_get_num_threads() << ", but should be " << numberOfThreads << "!");
 
-            CanonicalOneToAllProfileTB bobTheBuilder(data, uint8InitialFlags, collectedDepTimes,
-                routeLabels);
+            CanonicalOneToAllProfileTB bobTheBuilder(data, splitEventGraph,
+                uint8InitialFlags, collectedDepTimes, routeLabels);
 
 #pragma omp for schedule(dynamic)
             for (size_t stop = 0; stop < data.numberOfStops(); ++stop) {
@@ -215,10 +219,14 @@ public:
 private:
     std::vector<std::vector<uint8_t>> uint8InitialFlags;
     Data& data;
+    SplitStopEventGraph splitEventGraph;
+
     const int numberOfThreads;
     const int pinMultiplier;
     std::vector<TripBased::RouteLabel> routeLabels;
+
     DynamicTransferGraphWithARCFlag stopEventGraphDynamic;
+
     std::vector<std::vector<TripStopIndex>> collectedDepTimes;
 };
 } // namespace TripBased
