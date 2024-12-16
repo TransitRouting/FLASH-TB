@@ -1,9 +1,8 @@
 CC=g++ -fopenmp
-FLAGS=-std=c++17 -pipe
+FLAGS=-std=c++17 -pipe -DUSE_SIMD -DENABLE_PREFETCH
 OPTIMIZATION=-march=native -O3
 DEBUG=-rdynamic -Werror -Wpedantic -pedantic-errors -Wall -Wextra -Wparentheses -Wfatal-errors -D_GLIBCXX_DEBUG -g -fno-omit-frame-pointer
-RELEASE=-ffast-math -ftree-vectorize -Wfatal-errors -DNDEBUG
-
+RELEASE=-ffast-math -ftree-vectorize -Wfatal-errors -DNDEBUG -g
 
 all: ArcTBRelease NetworkRelease ULTRARelease 
 # all: ArcTBDebug NetworkDebug ULTRADebug
@@ -21,7 +20,7 @@ ULTRARelease:
 	$(CC) $(FLAGS) $(OPTIMIZATION) $(RELEASE) -o ULTRA ULTRA.cpp
 
 ArcTBDebug:
-	$(CC) $(FLAGS) $(OPTIMIZATION) $(DEBUG) -o ARCTB ArcTB.cpp
+	$(CC) $(FLAGS) $(DEBUG) -o ARCTB ArcTB.cpp
 
 ArcTBRelease:
 	$(CC) $(FLAGS) $(OPTIMIZATION) $(RELEASE) -o ARCTB ArcTB.cpp

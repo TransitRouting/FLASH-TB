@@ -7,7 +7,9 @@
 #include "TaggedInteger.h"
 
 template <int TAG, typename VALUE_TYPE>
-using TaggedIntegerX = TaggedInteger<TAG, typename VALUE_TYPE::ValueType, VALUE_TYPE::InvalidValue, VALUE_TYPE::DefaultValue, VALUE_TYPE>;
+using TaggedIntegerX =
+    TaggedInteger<TAG, typename VALUE_TYPE::ValueType, VALUE_TYPE::InvalidValue,
+                  VALUE_TYPE::DefaultValue, VALUE_TYPE>;
 
 using Vertex = TaggedInteger<0, u_int32_t, -u_int32_t(1)>;
 constexpr Vertex noVertex(Vertex::InvalidValue);
@@ -60,11 +62,10 @@ using PerceivedTime = double;
 inline constexpr PerceivedTime Unreachable = INFTY;
 
 struct NO_OPERATION {
-    template <typename... ARGS>
-    constexpr inline bool operator()(ARGS...) const noexcept
-    {
-        return false;
-    }
+  template <typename... ARGS>
+  constexpr inline bool operator()(ARGS...) const noexcept {
+    return false;
+  }
 };
 
 NO_OPERATION NoOperation;
