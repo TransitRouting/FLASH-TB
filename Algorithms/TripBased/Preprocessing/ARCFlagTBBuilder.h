@@ -123,6 +123,16 @@ class ARCFlagTBBuilder {
     int minDepartureTime = 0;
     collectAllDepTimes(minDepartureTime, maxDepartureTime, true);
 
+    // TODO remove
+    /* CanonicalOneToAllProfileTB bobTheBuilder(data, splitEventGraph, */
+    /*                                          uint8InitialFlags, */
+    /*                                          collectedDepTimes, routeLabels);
+     */
+
+    /* bobTheBuilder.run(Vertex(11)); */
+    /* std::cout << "TODO REMOVE!" << std::endl; */
+    /* return; */
+
     if (verbose) std::cout << "Starting the computation!\n";
 
     Progress progress(data.numberOfStops());

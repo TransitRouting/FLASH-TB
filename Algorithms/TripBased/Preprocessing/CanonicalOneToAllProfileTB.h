@@ -309,6 +309,7 @@ class CanonicalOneToAllProfileTB {
       }
     }
   }
+
   inline void unwindJourneys(const StopId &target) noexcept {
     int bestArrivalTime = INFTY;
     int partition = data.getPartitionCell(target);
@@ -356,6 +357,15 @@ class CanonicalOneToAllProfileTB {
     lastSource = sourceStop;
   }
 
+  void relaxInitialFootpaths(const int departureTime) {
+    for (const Edge edge :
+         data.raptorData.transferGraph.edgesFrom(sourceStop)) {
+      const Vertex stop = data.raptorData.transferGraph.get(ToVertex, edge);
+      addArrival(StopId(stop), departureTime + transferFromSource[stop],
+                 departureTime, 0, noTripId, noStopEvent);
+    }
+  }
+
   inline void scanTrips(const int departureTime) noexcept {
     size_t roundBegin = 0;
     size_t roundEnd = queueSize;
@@ -364,7 +374,10 @@ class CanonicalOneToAllProfileTB {
     StopId stop(-1);
     Vertex transferStop(-1);
 
-    while (roundBegin < roundEnd && n < 16) {
+    // relax inital footpaths
+    relaxInitialFootpaths(departureTime);
+
+    while (roundBegin < roundEnd && n < 15) {
       std::sort(queue.begin() + roundBegin, queue.begin() + roundEnd,
                 [](const auto &left, const auto &right) {
                   return std::tie(left.begin, left.end) <
@@ -496,6 +509,8 @@ class CanonicalOneToAllProfileTB {
 
   inline bool discard(const TripId trip, const StopIndex index,
                       const int n = 1) {
+    // as we check n+1
+    if (n >= 15) return true;
     if (runReachedIndex.alreadyReached(trip, index)) [[likely]]
       return true;
     if (profileReachedIndex(trip, 1) < index) [[likely]]
@@ -594,7 +609,7 @@ class CanonicalOneToAllProfileTB {
 
     stopsToUpdate.insert(stop);
 
-#pragma unroll GCC(4)
+    /* #pragma unroll GCC(4) */
     for (int i = n + 1; i < 16; ++i) {
       auto &thisLabel = getTargetLabel(stop, i);
       bool skip = (thisLabel.arrivalTime <= newArrivalTime);
@@ -604,13 +619,18 @@ class CanonicalOneToAllProfileTB {
           (!skip ? newDepartureTime : thisLabel.departureTime);
     }
 
-    // setting the parent information
-    // (trip, R, J) <=> Trip[R:J]
-    const auto R = StopIndex(runReachedIndex(trip) - 1);
-    const auto J = data.indexOfStopEvent[j];
+    if (trip != noTripId) [[likely]] {
+      // setting the parent information
+      // (trip, R, J) <=> Trip[R:J]
+      const auto R = StopIndex(runReachedIndex(trip) - 1);
+      const auto J = data.indexOfStopEvent[j];
 
-    AssertMsg(R <= J, "Trip Segement invalid as R > J?");
-    parentOfStop.setElement(n, stop, std::make_tuple(trip, R, J));
+      AssertMsg(R <= J, "Trip Segement invalid as R > J?");
+      parentOfStop.setElement(n, stop, std::make_tuple(trip, R, J));
+    } else {
+      parentOfStop.setElement(
+          n, stop, std::make_tuple(trip, StopIndex(0), StopIndex(0)));
+    }
 
     return true;
   }
@@ -618,19 +638,24 @@ class CanonicalOneToAllProfileTB {
   inline void getJourneyAndUnwind(const StopId target, int n,
                                   const int targetCell) noexcept {
     AssertMsg(data.isStop(target), "Target is not a stop!");
-    AssertMsg(0 < n, "n should be > 0!");
+    AssertMsg(0 <= n, "n should be > 0!");
     AssertMsg(n < 16, "n is out of bounds!");
     AssertMsg(isTargetLabelMarkedAsChanged(target, n),
               "Checking on a 'not-updated' target!");
 
+    if (target == sourceStop) [[unlikely]]
+      return;
     StopId prevStop = target;
 
     while (n > 1) {
       auto [trip, left, right] = parentOfStop.getElement(n, prevStop);
-      AssertMsg(data.isTrip(trip), "Trip " << trip << " is not valid!");
+      AssertMsg(data.isTrip(trip),
+                "Trip " << trip << " is not valid! Target: " << target
+                        << ", sourceStop: " << sourceStop << "!");
       AssertMsg(left <= right, "Trip Bounds are not valid!");
 
       auto [prevStopLocal, edge, local] = parentOfTrip.getElement(n, trip);
+
       assert(edge < uint8Flags.size());
       uint8Flags[edge][targetCell] = 1;
 

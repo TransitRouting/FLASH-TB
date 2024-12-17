@@ -7,6 +7,7 @@
 
 #include "../../../DataStructures/TripBased/Data.h"
 #include "../../../Helpers/aligned_allocator.h"
+#include "ProfileReachedIndexSIMD.h"
 
 namespace TripBased {
 
