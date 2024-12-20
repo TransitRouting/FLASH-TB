@@ -296,13 +296,13 @@ private:
                 const int newArrivalTime = tripIterator.arrivalTime();
                 if (newArrivalTime < arrivalTime<CURRENT>(tripIterator.stop())) {
                     const StopId parent = tripIterator.stop(parentIndex);
+                    const StopEventId arrivalStopEvent(tripIterator.stopEvent() - (&(data.stopEvents[0])));
                     if constexpr (CURRENT == 1) {
-                        const StopEventId arrivalStopEvent(tripIterator.stopEvent() - (&(data.stopEvents[0])));
                         arrivalByRoute1(tripIterator.stop(), newArrivalTime, parent, arrivalStopEvent);
                     } else {
                         const StopEventId parentStopEvent(tripIterator.stopEvent(parentIndex)
                                                           - (&(data.stopEvents[0])));
-                        arrivalByRoute2(tripIterator.stop(), newArrivalTime, parent, parentStopEvent);
+                        arrivalByRoute2(tripIterator.stop(), newArrivalTime, parent, parentStopEvent, arrivalStopEvent);
                     }
                 }
                 // Candidates may dominate equivalent labels from previous iterations
@@ -310,22 +310,23 @@ private:
                          && !isFromCurrentIteration<CURRENT>(tripIterator.stop())
                          && newArrivalTime < arrivalTime<CURRENT - 1>(tripIterator.stop())) {
                     const StopId parent = tripIterator.stop(parentIndex);
+                    const StopEventId arrivalStopEvent(tripIterator.stopEvent() - (&(data.stopEvents[0])));
                     if constexpr (CURRENT == 1) {
                         if (stationOfStop[parent].representative == sourceStation.representative) {
-                            const StopEventId arrivalStopEvent(tripIterator.stopEvent() - (&(data.stopEvents[0])));
                             arrivalByRoute1(tripIterator.stop(), newArrivalTime, parent, arrivalStopEvent);
                         }
                     } else {
                         if (oneTripTransferParent[parent] != noStopEvent) {
                             const StopEventId parentStopEvent(tripIterator.stopEvent(parentIndex)
                                                               - (&(data.stopEvents[0])));
-                            arrivalByRoute2(tripIterator.stop(), newArrivalTime, parent, parentStopEvent);
+                            arrivalByRoute2(tripIterator.stop(), newArrivalTime, parent, parentStopEvent,
+                                            arrivalStopEvent);
                         }
                     }
                 }
             }
         }
-        stopsUpdatedByRoute.sort();
+        stopsUpdatedByRoute.sortByValues();
         stopsUpdatedByTransfer.clear();
         routesServingUpdatedStops.clear();
     }
@@ -388,7 +389,7 @@ private:
     inline void relaxIntermediateTransfers() noexcept {
         AssertMsg(stopsUpdatedByTransfer.empty(), "stopsUpdatedByTransfer is not empty!");
 
-        auto& valuesToLoopOver = stopsUpdatedByRoute.getValues();
+        auto& valuesToLoopOver = stopsUpdatedByRoute.getKeys();
 
         for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
 #ifdef ENABLE_PREFETCH
@@ -422,7 +423,7 @@ private:
     inline void relaxFinalTransfers() noexcept {
         AssertMsg(stopsUpdatedByTransfer.empty(), "stopsUpdatedByTransfer is not empty!");
 
-        auto& valuesToLoopOver = stopsUpdatedByRoute.getValues();
+        auto& valuesToLoopOver = stopsUpdatedByRoute.getKeys();
 
         for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
 #ifdef ENABLE_PREFETCH
@@ -444,7 +445,7 @@ private:
             }
         }
 
-        for (const StopId stop : stopsUpdatedByRoute) {
+        for (const StopId stop : stopsUpdatedByRoute.getKeys()) {
             const int arrivalTime = twoTripsArrivalLabels[stop].arrivalTime;
             for (const Edge edge : data.transferGraph.edgesFrom(stop)) {
                 const StopId neighborStop(data.transferGraph.get(ToVertex, edge));
@@ -495,11 +496,11 @@ private:
         if (twoTripsArrivalLabels[stop].arrivalTime > arrivalTime) {
             updateArrival<2>(stop, arrivalTime, timestamp);
         }
-        stopsUpdatedByRoute.insert(stop);
+        stopsUpdatedByRoute.insert(stop, arrivalStopEvent);
     }
 
     inline void arrivalByRoute2(const StopId stop, const int arrivalTime, const StopId parent,
-                                const StopEventId parentStopEvent) noexcept {
+                                const StopEventId parentStopEvent, const StopEventId arrivalStopEvent) noexcept {
         // Mark journey as candidate or witness
         if (oneTripTransferParent[parent] != noStopEvent) {
             twoTripsRouteParent[stop] = parent;
@@ -508,7 +509,7 @@ private:
             twoTripsRouteParent[stop] = noStop;
         }
         updateArrival<2>(stop, arrivalTime, oneTripTimestamps[parent]);
-        stopsUpdatedByRoute.insert(stop);
+        stopsUpdatedByRoute.insert(stop, arrivalStopEvent);
     }
 
     inline void arrivalByEdge0(const StopId stop, const int arrivalTime) noexcept {
@@ -596,7 +597,7 @@ private:
     std::vector<Shortcut> shortcuts;
 
     IndexedMap<StopIndex, false, RouteId> routesServingUpdatedStops;
-    IndexedSet<false, StopId> stopsUpdatedByRoute;
+    IndexedMap<StopEventId, false, StopId> stopsUpdatedByRoute;
     IndexedSet<false, StopId> stopsUpdatedByTransfer;
 
     int earliestDepartureTime;

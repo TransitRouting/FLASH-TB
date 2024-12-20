@@ -115,6 +115,16 @@ public:
         }
     }
 
+    inline void sortByValues() noexcept {
+        std::sort(keys.begin(), keys.end(),
+                  [&](const KeyType& a, const KeyType& b) { return values[indices[a]] < values[indices[b]]; });
+        std::vector<Value> valuesCopy(values);
+        for (size_t i = 0; i < keys.size(); i++) {
+            values[i] = valuesCopy[indices[keys[i]]];
+            indices[keys[i]] = i;
+        }
+    }
+
     inline void sortLastNKeys(const size_t n) noexcept {
         sortLastNKeys(n, [&](const KeyType& a, const KeyType& b) { return a < b; });
     }
