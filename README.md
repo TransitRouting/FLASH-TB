@@ -54,11 +54,19 @@ Moritz Potthoff, Jonas Sauer
 Accepted for publication at the 22nd Symposium on Algorithmic Approaches for Transportation Modelling, Optimization, and Systems (ATMOS'22)
 
 ## Usage
-To use the Arc-Flag TB algorithm, compile the executables in the  ``Runnables`` folder (using the ``Makefile``). Next to the ``ULTRA`` and ``Network`` executables are the ``ARCTB`` executable and two scripts called ``prepLayoutGraph.script`` and ``arcFlagTB.script``.
+To compile all executables in release mode, run
 
-When executing ``ARCTB``, you can call ``runScript`` followed by the script name. For any command, you can call ``help`` followed by the command name to get information about the usage.
+```bash
+mkdir -p cmake-build-release
+cd cmake-build-release
+cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build . --target All --config Release
+```
 
-1. Prepare the GTFS Data by running ``prepLayoutGraph.script``. **Do not forget to change the directories to the GTFS Data in the script and the place where you want to store the computed binaries.** The script does the following automatically:
+Make sure you have OpenMP installed. This will create the executables ``ArcTB``, ``Network`` and ``ULTRA``.
+
+When executing ``ArcTB``, you can call ``runScript`` followed by the script name. For any command, you can call ``help`` followed by the command name to get information about the usage.
+
+1. Prepare the GTFS Data by running ``../Runnables/prepLayoutGraph.script``. **Do not forget to change the directories to the GTFS Data in the script and the place where you want to store the computed binaries.** The script does the following automatically:
 
 	* ``parseGTFS``simply parses the GTFS directory into a GTFS binary
 
@@ -75,7 +83,7 @@ When executing ``ARCTB``, you can call ``runScript`` followed by the script name
 ./KaHIP/deploy/kaffpaE Datasets/germany/raptor.layout.graph --k=128 --imbalance=5 --preconfiguration=ssocial --time_limit=600 --output_filename=Datasets/germany/raptor.partition128.txt
 ```
 
-3. Compute the Flags. After partitioning the layout graph, you can compute the Flags by running the ``arcFlagTB.script`` script. **Again, make sure that the binary- and 'partitioned text files' - paths are correct**
+3. Compute the Flags. After partitioning the layout graph, you can compute the Flags by running the ``../Runnables/arcFlagTB.script`` script. **Again, make sure that the binary- and 'partitioned text files' - paths are correct**
 	* As a first step, ``raptorToTripBased``computes the TripBased Data from the RAPTOR binary. Note that one can pass the text file with the partition values as a third parameter.
 
 	* Finally, ``computeArcFlagTB``computes the Flags for the given Trip-Based data. Note that as a third parameter, one can pass the text file with the partition values (not necessary if you already passed it before during ``raptorToTripBased``). Here are optional arguments such as ``Fixing Departure Time``or ``Buffering``and the additional Flag Compression.
@@ -88,7 +96,7 @@ Additionally, query performance can be evaluated by using the following commands
 
 ## Example
 
-In the directory ``test`` is an example GTFS datasets (IC/ICE from [gtfs.de](https://gtfs.de/de/feeds/de_fv/)). You can run the executable ``ARCTB`` and, inside, call ``runScript prepLayoutGraph.script``. The last command executed by the script should produce the following output:
+In the directory ``test`` is an example GTFS datasets (IC/ICE from [gtfs.de](https://gtfs.de/de/feeds/de_fv/)). You can run the executable ``ArcTB`` and, inside, call ``runScript ../Runnables/prepLayoutGraph.script``. The last command executed by the script should produce the following output:
 
 ```
 > createLayoutGraph ../test/raptor.binary ../test/exports/raptor.layout.graph true
@@ -116,7 +124,7 @@ Number of edges:	4024
 Finished creating metis file ../test/exports/raptor.layout.graph
 ```
 
-After partitioning the layout graph (there is an example with k=32 inside the ``test/exports`` folder), you can run ``ARCTB`` again and call ``runScript arcFlagTB.script``. This yields the following:
+After partitioning the layout graph (there is an example with k=32 inside the ``test/exports`` folder), you can run ``ArcTB`` again and call ``runScript ../Runnables/arcFlagTB.script``. This yields the following:
 
 ```
 > computeArcFlagTB ../test/trip.binary ../test/trip.binary None false false
