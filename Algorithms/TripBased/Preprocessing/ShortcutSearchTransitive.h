@@ -295,13 +295,14 @@ private:
                 tripIterator.nextStop();
                 const int newArrivalTime = tripIterator.arrivalTime();
                 if (newArrivalTime < arrivalTime<CURRENT>(tripIterator.stop())) {
+                    const StopId parent = tripIterator.stop(parentIndex);
                     if constexpr (CURRENT == 1) {
-                        arrivalByRoute<CURRENT>(tripIterator.stop(), newArrivalTime, tripIterator.stop(parentIndex),
-                                                StopEventId(tripIterator.stopEvent() - (&(data.stopEvents[0]))));
+                        const StopEventId arrivalStopEvent(tripIterator.stopEvent() - (&(data.stopEvents[0])));
+                        arrivalByRoute1(tripIterator.stop(), newArrivalTime, parent, arrivalStopEvent);
                     } else {
-                        arrivalByRoute<CURRENT>(
-                            tripIterator.stop(), newArrivalTime, tripIterator.stop(parentIndex),
-                            StopEventId(tripIterator.stopEvent(parentIndex) - (&(data.stopEvents[0]))));
+                        const StopEventId parentStopEvent(tripIterator.stopEvent(parentIndex)
+                                                          - (&(data.stopEvents[0])));
+                        arrivalByRoute2(tripIterator.stop(), newArrivalTime, parent, parentStopEvent);
                     }
                 }
                 // Candidates may dominate equivalent labels from previous iterations
@@ -311,14 +312,14 @@ private:
                     const StopId parent = tripIterator.stop(parentIndex);
                     if constexpr (CURRENT == 1) {
                         if (stationOfStop[parent].representative == sourceStation.representative) {
-                            arrivalByRoute<CURRENT>(tripIterator.stop(), newArrivalTime, parent,
-                                                    StopEventId(tripIterator.stopEvent() - (&(data.stopEvents[0]))));
+                            const StopEventId arrivalStopEvent(tripIterator.stopEvent() - (&(data.stopEvents[0])));
+                            arrivalByRoute1(tripIterator.stop(), newArrivalTime, parent, arrivalStopEvent);
                         }
                     } else {
                         if (oneTripTransferParent[parent] != noStopEvent) {
-                            arrivalByRoute<CURRENT>(
-                                tripIterator.stop(), newArrivalTime, parent,
-                                StopEventId(tripIterator.stopEvent(parentIndex) - (&(data.stopEvents[0]))));
+                            const StopEventId parentStopEvent(tripIterator.stopEvent(parentIndex)
+                                                              - (&(data.stopEvents[0])));
+                            arrivalByRoute2(tripIterator.stop(), newArrivalTime, parent, parentStopEvent);
                         }
                     }
                 }
@@ -479,17 +480,6 @@ private:
             return oneTripArrivalLabels[stop].arrivalTime;
         } else if constexpr (ROUND == 2) {
             return twoTripsArrivalLabels[stop].arrivalTime;
-        }
-    }
-
-    template <int ROUND>
-    inline void arrivalByRoute(const StopId stop, const int arrivalTime, const StopId parent,
-                               const StopEventId relevantStopEvent) noexcept {
-        static_assert((ROUND == 1) | (ROUND == 2), "Invalid round!");
-        if constexpr (ROUND == 1) {
-            arrivalByRoute1(stop, arrivalTime, parent, relevantStopEvent);
-        } else if constexpr (ROUND == 2) {
-            arrivalByRoute2(stop, arrivalTime, parent, relevantStopEvent);
         }
     }
 
