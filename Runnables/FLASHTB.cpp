@@ -1,6 +1,6 @@
 #include "../Helpers/Console/CommandLineParser.h"
 #include "../Shell/Shell.h"
-#include "Commands/ArcTBPreprocessing.h"
+#include "Commands/FLASHTBPreprocessing.h"
 #include "Commands/NetworkIO.h"
 #include "Commands/NetworkTools.h"
 #include "Commands/QueryBenchmark.h"
@@ -18,7 +18,6 @@ int main(int argc, char** argv) {
     new WriteTripBasedToCSV(shell);
     new WriteLayoutGraphToGraphML(shell);
     new WriteTripBasedToGraphML(shell);
-    // new ComputePageRank(shell);
 
     new IntermediateMakeTransitive(shell);
     new ReduceGraph(shell);
@@ -38,8 +37,6 @@ int main(int argc, char** argv) {
     new RunTransitiveCSAQueries(shell);
     new RunTransitiveProfileCSAQueries(shell);
     new RunTransitiveTripBasedQueries(shell);
-
-    /* new RunTransitiveTripBasedQueryExplizitly(shell); */
 
     new RunTransitiveProfileOneToAllTripBasedQueries(shell);
     new RunTransitiveProfileTripBasedQueries(shell);

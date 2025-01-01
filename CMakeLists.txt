@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(Arc-FlagTB)
+project(FLASH-TB)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 #Compiler settings
@@ -19,7 +19,7 @@ function(add_runnable name)
     target_link_libraries(${name} PUBLIC OpenMP::OpenMP_CXX)
 endfunction()
 
-set(RUNNABLES ArcTB Network ULTRA)
+set(RUNNABLES FLASHTB Network ULTRA)
 foreach(f ${RUNNABLES})
     add_runnable(${f} Runnables/${f}.cpp)
 endforeach()

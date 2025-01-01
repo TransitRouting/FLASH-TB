@@ -37,6 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../../../DataStructures/RAPTOR/Entities/ArrivalLabel.h"
 #include "../../../../DataStructures/RAPTOR/Entities/JourneyWithStopEvent.h"
 #include "../../../../Helpers/Vector/Vector.h"
+#include "../../../RAPTOR/Profiler.h"
 
 namespace RAPTOR::RangeRAPTOR {
 
