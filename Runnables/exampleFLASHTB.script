@@ -1,0 +1,4 @@
+applyPartitionToTripBased ../Datasets/Karlsruhe/trip.binary ../Datasets/Karlsruhe/raptor.partition32.txt ../Datasets/Karlsruhe/trip.binary
+computeArcFlagTB ../Datasets/Karlsruhe/trip.binary ../Datasets/Karlsruhe/trip.binary
+runTransitiveArcTripBasedQueries ../Datasets/Karlsruhe/trip.binary 10000 false
+runTransitiveArcTripBasedQueries ../Datasets/Karlsruhe/trip.binary 10000 true

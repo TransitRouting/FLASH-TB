@@ -1,6 +1,0 @@
-computeTransitiveEventToEventShortcuts ../../Datasets/OldDatasets/Swiss/raptor.binary ../../Datasets/OldDatasets/Swiss/trip.binary
-runTransitiveTripBasedQueries ../../Datasets/OldDatasets/Swiss/trip.binary 10000
-applyPartitionToTripBased ../../Datasets/OldDatasets/Swiss/trip.binary ../../Datasets/OldDatasets/Swiss/raptor.partition4096.txt ../../Datasets/OldDatasets/Swiss/trip.binary
-computeArcFlagTB ../../Datasets/OldDatasets/Swiss/trip.binary ../../Datasets/OldDatasets/Swiss/trip.binary
-runTransitiveArcTripBasedQueries ../../Datasets/OldDatasets/Swiss/trip.binary 10000 false
-runTransitiveArcTripBasedQueries ../../Datasets/OldDatasets/Swiss/trip.binary 10000 true

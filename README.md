@@ -63,3 +63,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build . --target All --config Rel
 ```
 
 Make sure you have OpenMP installed. This will create the executables ``FLASHTB``, ``Network`` and ``ULTRA``.
+
+In the ``Runnables/`` directory you will find some example files on how to use the FLASH TB algorithm.
+Start by downloading a GTFS dataset using ``downloadExample.sh``.
+Then run ``./FLASHTB'' and run ``runScript example.script''.
+This will build all the necessary binaries, including trip.binary and raptor.binary, as well as the layout graph in METIS format.
+This METIS file can be partitioned using a graph partitioner of your choice. For example: ``./KaHIP/deploy/kaffpaE FLASH-TB/Datasets/Karlsruhe/raptor.layout.graph --k=32 --imbalance=5 --preconfiguration=social --time_limit=60 --output_filename=FLASH-TB/Datasets/Karlsruhe/raptor.partition32.txt`` . After this step, you can call ``runScript exampleFLASHTB.script`` in ``./FLASHTB`` to build FLASHTB based on the calculated partition. This will also evaluate query performance.

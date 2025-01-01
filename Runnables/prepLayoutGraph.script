@@ -1,9 +1,0 @@
-parseGTFS ../../Datasets/OldDatasets/Germany/gtfs/ ../../Datasets/OldDatasets/Germany/gtfs.binary
-gtfsToIntermediate ../../Datasets/OldDatasets/Germany/gtfs.binary 20220310 20220311 true false ../../Datasets/OldDatasets/Germany/intermediate.binary
-reduceGraph ../../Datasets/OldDatasets/Germany/intermediate.binary ../../Datasets/OldDatasets/Germany/intermediate.binary
-reduceToMaximumConnectedComponent ../../Datasets/OldDatasets/Germany/intermediate.binary ../../Datasets/OldDatasets/Germany/intermediate.binary
-makeIntermediateTransitive ../../Datasets/OldDatasets/Germany/intermediate.binary ../../Datasets/OldDatasets/Germany/intermediate.binary
-reduceGraph ../../Datasets/OldDatasets/Germany/intermediate.binary ../../Datasets/OldDatasets/Germany/intermediate.binary
-makeOneHopTransfers ../../Datasets/OldDatasets/Germany/intermediate.binary 86400 ../../Datasets/OldDatasets/Germany/intermediate.binary true
-intermediateToRAPTOR ../../Datasets/OldDatasets/Germany/intermediate.binary ../../Datasets/OldDatasets/Germany/raptor.binary
-createLayoutGraph ../../Datasets/OldDatasets/Germany/raptor.binary ../../Datasets/OldDatasets/Germany/raptor.layout.graph true

@@ -1,0 +1,7 @@
+parseGTFS ../Datasets/Karlsruhe/GTFS/ ../Datasets/Karlsruhe/gtfs.binary
+gtfsToIntermediate ../Datasets/Karlsruhe/gtfs.binary 20250101 20250102 false false ../Datasets/Karlsruhe/intermediate.binary
+makeIntermediateTransitive ../Datasets/Karlsruhe/intermediate.binary ../Datasets/Karlsruhe/intermediate.binary
+intermediateToRAPTOR ../Datasets/Karlsruhe/intermediate.binary ../Datasets/Karlsruhe/raptor.binary
+createLayoutGraph ../Datasets/Karlsruhe/raptor.binary ../Datasets/Karlsruhe/raptor.layout.graph
+computeTransitiveEventToEventShortcuts ../Datasets/Karlsruhe/raptor.binary ../Datasets/Karlsruhe/trip.binary
+runTransitiveTripBasedQueries ../Datasets/Karlsruhe/trip.binary 10000
