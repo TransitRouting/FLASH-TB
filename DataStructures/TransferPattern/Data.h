@@ -99,8 +99,8 @@ private:
     }
 
 public:
-    inline void assignLowerBounds(const StopId stop, std::vector<int> bestTravelTimes,
-                                  std::vector<uint8_t> bestMinNumberOfTrips) {
+    inline void assignLowerBounds(const StopId stop, const std::vector<int>& bestTravelTimes,
+                                  const std::vector<uint8_t>& bestMinNumberOfTrips) {
         AssertMsg(raptorData.isStop(stop), "Stop is not a valid stop!");
         AssertMsg(bestTravelTimes.size() == raptorData.numberOfStops(),
                   "BestTravelTimes has not the right amount of elements!");
@@ -116,7 +116,7 @@ public:
         }
     }
 
-    inline int getLowerBoundTravelTime(const StopId& target, const StopId& u) {
+    inline int getLowerBoundTravelTime(const StopId target, const StopId u) {
         AssertMsg(raptorData.isStop(target), "Target is not a stop!");
         AssertMsg(raptorData.isStop(u), "Stop u is not a stop!");
 
