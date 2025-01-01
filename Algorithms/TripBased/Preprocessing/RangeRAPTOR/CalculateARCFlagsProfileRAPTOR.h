@@ -24,6 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **********************************************************************************/
 #pragma once
 
+#include "RangeRAPTOR.h"
+#include "TransitiveRAPTORModule.h"
 #include <unordered_map>
 
 #include "../../../../DataStructures/Container/Set.h"
@@ -33,27 +35,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../../../DataStructures/TripBased/Data.h"
 #include "../../../../Helpers/String/String.h"
 #include "../../Query/ProfileReachedIndex.h"
-#include "RangeRAPTOR.h"
-#include "TransitiveRAPTORModule.h"
 
 namespace TripBased {
 
 class CalculateARCFlagsProfile {
- public:
-  CalculateARCFlagsProfile(RAPTOR::Data& data)
-      : data(data), numberOfPartitions(data.raptorData.numberOfPartitions) {}
+public:
+    CalculateARCFlagsProfile(RAPTOR::Data& data) : data(data), numberOfPartitions(data.raptorData.numberOfPartitions) {}
 
-  inline void run(const Vertex source) noexcept {
-    rangeRAPTOR.runOneToAllStops(source);
-  }
+    inline void run(const Vertex source) noexcept { rangeRAPTOR.runOneToAllStops(source); }
 
- private:
-  RAPTOR::Data& data;
-  RAPTOR::RangeRAPTOR::RangeRAPTOR rangeRAPTOR;
+private:
+    RAPTOR::Data& data;
+    RAPTOR::RangeRAPTOR::RangeRAPTOR rangeRAPTOR;
 
-  int numberOfPartitions;
+    int numberOfPartitions;
 
-  SimpleDynamicGraphWithARCFlag stopEventGraphOfThread;
+    SimpleDynamicGraphWithARCFlag stopEventGraphOfThread;
 };
 
-}  // namespace TripBased
+} // namespace TripBased

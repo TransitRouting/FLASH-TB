@@ -24,6 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **********************************************************************************/
 #pragma once
 
+#include "CanonicalOneToAllProfileTB.h"
+#include "SplitStopEventGraph.h"
 #include <numeric>
 
 #include "../../../DataStructures/RAPTOR/Data.h"
@@ -32,291 +34,253 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../../Helpers/Console/Progress.h"
 #include "../../../Helpers/MultiThreading.h"
 #include "../../../Helpers/String/String.h"
-#include "CanonicalOneToAllProfileTB.h"
-#include "SplitStopEventGraph.h"
 
 namespace TripBased {
 
 class ARCFlagTBBuilder {
- public:
-  ARCFlagTBBuilder(Data &data, const int numberOfThreads,
-                   const int pinMultiplier = 1)
-      : data(data),
-        splitEventGraph(data),
-        numberOfThreads(numberOfThreads),
-        pinMultiplier(pinMultiplier),
-        routeLabels(data.numberOfRoutes()) {
-    collectedDepTimes.assign(data.numberOfStops(), {});
-    Graph::copy(data.stopEventGraph, stopEventGraphDynamic);
+public:
+    ARCFlagTBBuilder(Data& data, const int numberOfThreads, const int pinMultiplier = 1)
+        : data(data),
+          splitEventGraph(data),
+          numberOfThreads(numberOfThreads),
+          pinMultiplier(pinMultiplier),
+          routeLabels(data.numberOfRoutes()) {
+        collectedDepTimes.assign(data.numberOfStops(), {});
+        Graph::copy(data.stopEventGraph, stopEventGraphDynamic);
 
-    std::vector<uint8_t> emptyFlagOneEdge(data.getNumberOfPartitionCells(), 0);
-    uint8InitialFlags.assign(data.stopEventGraph.numEdges(), emptyFlagOneEdge);
+        std::vector<uint8_t> emptyFlagOneEdge(data.getNumberOfPartitionCells(), 0);
+        uint8InitialFlags.assign(data.stopEventGraph.numEdges(), emptyFlagOneEdge);
 
-    for (const RouteId route : data.raptorData.routes()) {
-      const size_t numberOfStops = data.numberOfStopsInRoute(route);
-      const size_t numberOfTrips = data.raptorData.numberOfTripsInRoute(route);
-      const TripId firstTrip = data.firstTripOfRoute[route];
-      const RAPTOR::StopEvent *stopEvents = data.eventArrayOfTrip(firstTrip);
-      routeLabels[route].numberOfTrips = numberOfTrips;
-      routeLabels[route].departureTimes.resize((numberOfStops - 1) *
-                                               numberOfTrips);
-      for (size_t trip = 0; trip < numberOfTrips; ++trip) {
-        for (size_t stopIndex = 0; stopIndex + 1 < numberOfStops; ++stopIndex) {
-          routeLabels[route]
-              .departureTimes[(stopIndex * numberOfTrips) + trip] =
-              stopEvents[(trip * numberOfStops) + stopIndex].departureTime;
+        for (const RouteId route : data.raptorData.routes()) {
+            const size_t numberOfStops = data.numberOfStopsInRoute(route);
+            const size_t numberOfTrips = data.raptorData.numberOfTripsInRoute(route);
+            const TripId firstTrip = data.firstTripOfRoute[route];
+            const RAPTOR::StopEvent* stopEvents = data.eventArrayOfTrip(firstTrip);
+            routeLabels[route].numberOfTrips = numberOfTrips;
+            routeLabels[route].departureTimes.resize((numberOfStops - 1) * numberOfTrips);
+            for (size_t trip = 0; trip < numberOfTrips; ++trip) {
+                for (size_t stopIndex = 0; stopIndex + 1 < numberOfStops; ++stopIndex) {
+                    routeLabels[route].departureTimes[(stopIndex * numberOfTrips) + trip] =
+                        stopEvents[(trip * numberOfStops) + stopIndex].departureTime;
+                }
+            }
         }
-      }
+
+        splitEventGraph.showInfo();
+
+        /* auto showAllTransfers = [&](const auto event) { */
+        /*   std::cout << "Event " << event << " at stop " */
+        /*             << data.arrivalEvents[event].stop << std::endl; */
+        /*   const auto trip = data.tripOfStopEvent[event]; */
+        /*   std::cout << "Trip " << trip << ":\n"; */
+        /*   for (auto j = data.firstStopEventOfTrip[trip]; */
+        /*        j < data.firstStopEventOfTrip[trip + 1]; ++j) { */
+        /*     std::cout << j << " " << data.arrivalEvents[j].stop << " " */
+        /*               << data.arrivalEvents[j].arrivalTime << std::endl; */
+        /*   } */
+        /*   std::cout << "********************" << std::endl; */
+        /*   std::cout << "Local Edge from " << event << std::endl; */
+        /*   for (auto edge = splitEventGraph.beginLocalEdgeFrom(event); */
+        /*        edge < splitEventGraph.beginLocalEdgeFrom(event + 1); ++edge) { */
+        /*     const auto toEvent = splitEventGraph.toLocalVertex[edge]; */
+        /*     std::cout << toEvent << ", " << data.arrivalEvents[toEvent].stop */
+        /*               << " with " << data.tripOfStopEvent[toEvent] << std::endl;
+         */
+        /*   } */
+
+        /*   std::cout << "Transfer Edge from " << event << std::endl; */
+        /*   for (auto edge = splitEventGraph.beginTransferEdgeFrom(event); */
+        /*        edge < splitEventGraph.beginTransferEdgeFrom(event + 1); ++edge) {
+         */
+        /*     const auto toEvent = splitEventGraph.toTransferVertex[edge]; */
+        /*     std::cout << toEvent << ", " << data.arrivalEvents[toEvent].stop */
+        /*               << " with " << data.tripOfStopEvent[toEvent] << std::endl;
+         */
+        /*   } */
+        /*   std::cout << "********************" << std::endl; */
+        /*   for (auto edge = data.stopEventGraph.beginEdgeFrom(Vertex(event)); */
+        /*        edge < data.stopEventGraph.beginEdgeFrom(Vertex(event + 1)); */
+        /*        ++edge) { */
+        /*     const auto toEvent = data.stopEventGraph.get(ToVertex, edge); */
+        /*     std::cout << toEvent << ", " << data.arrivalEvents[toEvent].stop */
+        /*               << " with " << data.tripOfStopEvent[toEvent] << std::endl;
+         */
+        /*   } */
+        /*   std::cout << "********************" << std::endl; */
+        /* }; */
     }
 
-    splitEventGraph.showInfo();
+    void computeARCFlags(const bool verbose = true) {
+        Assert(data.getNumberOfPartitionCells() > 1);
+        if (verbose) {
+            std::cout << "Computing ARCFlags with " << numberOfThreads << " threads." << std::endl;
+        }
+        int maxDepartureTime = 24 * 60 * 60;
+        int minDepartureTime = 0;
+        collectAllDepTimes(minDepartureTime, maxDepartureTime, true);
 
-    /* auto showAllTransfers = [&](const auto event) { */
-    /*   std::cout << "Event " << event << " at stop " */
-    /*             << data.arrivalEvents[event].stop << std::endl; */
-    /*   const auto trip = data.tripOfStopEvent[event]; */
-    /*   std::cout << "Trip " << trip << ":\n"; */
-    /*   for (auto j = data.firstStopEventOfTrip[trip]; */
-    /*        j < data.firstStopEventOfTrip[trip + 1]; ++j) { */
-    /*     std::cout << j << " " << data.arrivalEvents[j].stop << " " */
-    /*               << data.arrivalEvents[j].arrivalTime << std::endl; */
-    /*   } */
-    /*   std::cout << "********************" << std::endl; */
-    /*   std::cout << "Local Edge from " << event << std::endl; */
-    /*   for (auto edge = splitEventGraph.beginLocalEdgeFrom(event); */
-    /*        edge < splitEventGraph.beginLocalEdgeFrom(event + 1); ++edge) { */
-    /*     const auto toEvent = splitEventGraph.toLocalVertex[edge]; */
-    /*     std::cout << toEvent << ", " << data.arrivalEvents[toEvent].stop */
-    /*               << " with " << data.tripOfStopEvent[toEvent] << std::endl;
-     */
-    /*   } */
+        // TODO remove
+        /* CanonicalOneToAllProfileTB bobTheBuilder(data, splitEventGraph, */
+        /*                                          uint8InitialFlags, */
+        /*                                          collectedDepTimes, routeLabels);
+         */
 
-    /*   std::cout << "Transfer Edge from " << event << std::endl; */
-    /*   for (auto edge = splitEventGraph.beginTransferEdgeFrom(event); */
-    /*        edge < splitEventGraph.beginTransferEdgeFrom(event + 1); ++edge) {
-     */
-    /*     const auto toEvent = splitEventGraph.toTransferVertex[edge]; */
-    /*     std::cout << toEvent << ", " << data.arrivalEvents[toEvent].stop */
-    /*               << " with " << data.tripOfStopEvent[toEvent] << std::endl;
-     */
-    /*   } */
-    /*   std::cout << "********************" << std::endl; */
-    /*   for (auto edge = data.stopEventGraph.beginEdgeFrom(Vertex(event)); */
-    /*        edge < data.stopEventGraph.beginEdgeFrom(Vertex(event + 1)); */
-    /*        ++edge) { */
-    /*     const auto toEvent = data.stopEventGraph.get(ToVertex, edge); */
-    /*     std::cout << toEvent << ", " << data.arrivalEvents[toEvent].stop */
-    /*               << " with " << data.tripOfStopEvent[toEvent] << std::endl;
-     */
-    /*   } */
-    /*   std::cout << "********************" << std::endl; */
-    /* }; */
-  }
+        /* bobTheBuilder.run(Vertex(11)); */
+        /* std::cout << "TODO REMOVE!" << std::endl; */
+        /* return; */
 
-  void computeARCFlags(const bool verbose = true) {
-    Assert(data.getNumberOfPartitionCells() > 1);
-    if (verbose) {
-      std::cout << "Computing ARCFlags with " << numberOfThreads << " threads."
-                << std::endl;
-    }
-    int maxDepartureTime = 24 * 60 * 60;
-    int minDepartureTime = 0;
-    collectAllDepTimes(minDepartureTime, maxDepartureTime, true);
+        if (verbose) std::cout << "Starting the computation!\n";
 
-    // TODO remove
-    /* CanonicalOneToAllProfileTB bobTheBuilder(data, splitEventGraph, */
-    /*                                          uint8InitialFlags, */
-    /*                                          collectedDepTimes, routeLabels);
-     */
+        Progress progress(data.numberOfStops());
 
-    /* bobTheBuilder.run(Vertex(11)); */
-    /* std::cout << "TODO REMOVE!" << std::endl; */
-    /* return; */
-
-    if (verbose) std::cout << "Starting the computation!\n";
-
-    Progress progress(data.numberOfStops());
-
-    const int numCores = numberOfCores();
-    omp_set_num_threads(numberOfThreads);
+        const int numCores = numberOfCores();
+        omp_set_num_threads(numberOfThreads);
 #pragma omp parallel
-    {
-      int threadId = omp_get_thread_num();
-      pinThreadToCoreId((threadId * pinMultiplier) % numCores);
-      AssertMsg(omp_get_num_threads() == numberOfThreads,
-                "Number of threads is " << omp_get_num_threads()
-                                        << ", but should be " << numberOfThreads
-                                        << "!");
+        {
+            int threadId = omp_get_thread_num();
+            pinThreadToCoreId((threadId * pinMultiplier) % numCores);
+            AssertMsg(omp_get_num_threads() == numberOfThreads,
+                      "Number of threads is " << omp_get_num_threads() << ", but should be " << numberOfThreads << "!");
 
-      CanonicalOneToAllProfileTB bobTheBuilder(data, splitEventGraph,
-                                               uint8InitialFlags,
-                                               collectedDepTimes, routeLabels);
+            CanonicalOneToAllProfileTB bobTheBuilder(data, splitEventGraph, uint8InitialFlags, collectedDepTimes,
+                                                     routeLabels);
 
 #pragma omp for schedule(dynamic)
-      for (size_t stop = 0; stop < data.numberOfStops(); ++stop) {
-        bobTheBuilder.run(Vertex(stop));
-        ++progress;
-      }
+            for (size_t stop = 0; stop < data.numberOfStops(); ++stop) {
+                bobTheBuilder.run(Vertex(stop));
+                ++progress;
+            }
+        }
+
+        progress.finished();
+
+        for (std::size_t edge = 0; edge < splitEventGraph.numberOfLocalEdges(); ++edge) {
+            std::vector<bool> flags(data.getNumberOfPartitionCells(), false);
+
+            for (int i(0); i < data.getNumberOfPartitionCells(); ++i) {
+                flags[i] = (bool)uint8InitialFlags[edge][i];
+            }
+            Ensure(stopEventGraphDynamic.isEdge(Edge(splitEventGraph.originalLocalId[edge])),
+                   "The original edge of this local edge is not valid");
+            stopEventGraphDynamic.set(ARCFlag, Edge(splitEventGraph.originalLocalId[edge]), flags);
+        }
+
+        const size_t offset = splitEventGraph.numberOfLocalEdges();
+        for (std::size_t edge = 0; edge < splitEventGraph.numberOfTransferEdges(); ++edge) {
+            std::vector<bool> flags(data.getNumberOfPartitionCells(), false);
+
+            for (int i(0); i < data.getNumberOfPartitionCells(); ++i) {
+                flags[i] = (bool)uint8InitialFlags[edge + offset][i];
+            }
+            Ensure(stopEventGraphDynamic.isEdge(Edge(splitEventGraph.originalTransferId[edge])),
+                   "The original edge of this transfer edge is not valid");
+            stopEventGraphDynamic.set(ARCFlag, Edge(splitEventGraph.originalTransferId[edge]), flags);
+        }
+
+        if (verbose) std::cout << "Preprocessing done!\nNow deleting unnecessary edges\n";
+
+        size_t flagCounter(0);
+        size_t deletedEdges(0);
+        std::vector<bool> edgesToDelete(stopEventGraphDynamic.edgeLimit(), false);
+
+        for (Edge edge : stopEventGraphDynamic.edges()) {
+            // if no flag set for a particular edge => throw it away
+            if (numberOfFLAGInEdge(stopEventGraphDynamic.get(ARCFlag, edge)) == 0) {
+                edgesToDelete[edge] = true;
+                ++deletedEdges;
+            } else flagCounter += numberOfFLAGInEdge(stopEventGraphDynamic.get(ARCFlag, edge));
+        }
+
+        stopEventGraphDynamic.deleteEdges(edgesToDelete, true);
+        Graph::copy(stopEventGraphDynamic, data.stopEventGraph);
+
+        if (verbose) {
+            std::cout << "Arc-Flag Stats:\n";
+            std::cout << "Number of Flags set:          " << flagCounter << " ("
+                      << 100 * flagCounter / (stopEventGraphDynamic.numEdges() * data.getNumberOfPartitionCells())
+                      << "%)\n";
+            std::cout << "Number of removed edges:      " << deletedEdges << " ("
+                      << 100 * deletedEdges / (stopEventGraphDynamic.numEdges() + deletedEdges) << "%)\n";
+        }
     }
 
-    progress.finished();
+    int numberOfFLAGInEdge(std::vector<bool>& flags) { return std::accumulate(flags.begin(), flags.end(), 0); }
 
-    for (std::size_t edge = 0; edge < splitEventGraph.numberOfLocalEdges();
-         ++edge) {
-      std::vector<bool> flags(data.getNumberOfPartitionCells(), false);
+    const std::vector<TripStopIndex>& getCollectedDepTimes(const StopId& stop) { return collectedDepTimes[stop]; }
 
-      for (int i(0); i < data.getNumberOfPartitionCells(); ++i) {
-        flags[i] = (bool)uint8InitialFlags[edge][i];
-      }
-      Ensure(stopEventGraphDynamic.isEdge(
-                 Edge(splitEventGraph.originalLocalId[edge])),
-             "The original edge of this local edge is not valid");
-      stopEventGraphDynamic.set(
-          ARCFlag, Edge(splitEventGraph.originalLocalId[edge]), flags);
-    }
-
-    const size_t offset = splitEventGraph.numberOfLocalEdges();
-    for (std::size_t edge = 0; edge < splitEventGraph.numberOfTransferEdges();
-         ++edge) {
-      std::vector<bool> flags(data.getNumberOfPartitionCells(), false);
-
-      for (int i(0); i < data.getNumberOfPartitionCells(); ++i) {
-        flags[i] = (bool)uint8InitialFlags[edge + offset][i];
-      }
-      Ensure(stopEventGraphDynamic.isEdge(
-                 Edge(splitEventGraph.originalTransferId[edge])),
-             "The original edge of this transfer edge is not valid");
-      stopEventGraphDynamic.set(
-          ARCFlag, Edge(splitEventGraph.originalTransferId[edge]), flags);
-    }
-
-    if (verbose)
-      std::cout << "Preprocessing done!\nNow deleting unnecessary edges\n";
-
-    size_t flagCounter(0);
-    size_t deletedEdges(0);
-    std::vector<bool> edgesToDelete(stopEventGraphDynamic.edgeLimit(), false);
-
-    for (Edge edge : stopEventGraphDynamic.edges()) {
-      // if no flag set for a particular edge => throw it away
-      if (numberOfFLAGInEdge(stopEventGraphDynamic.get(ARCFlag, edge)) == 0) {
-        edgesToDelete[edge] = true;
-        ++deletedEdges;
-      } else
-        flagCounter +=
-            numberOfFLAGInEdge(stopEventGraphDynamic.get(ARCFlag, edge));
-    }
-
-    stopEventGraphDynamic.deleteEdges(edgesToDelete, true);
-    Graph::copy(stopEventGraphDynamic, data.stopEventGraph);
-
-    if (verbose) {
-      std::cout << "Arc-Flag Stats:\n";
-      std::cout << "Number of Flags set:          " << flagCounter << " ("
-                << 100 * flagCounter /
-                       (stopEventGraphDynamic.numEdges() *
-                        data.getNumberOfPartitionCells())
-                << "%)\n";
-      std::cout << "Number of removed edges:      " << deletedEdges << " ("
-                << 100 * deletedEdges /
-                       (stopEventGraphDynamic.numEdges() + deletedEdges)
-                << "%)\n";
-    }
-  }
-
-  int numberOfFLAGInEdge(std::vector<bool> &flags) {
-    return std::accumulate(flags.begin(), flags.end(), 0);
-  }
-
-  const std::vector<TripStopIndex> &getCollectedDepTimes(const StopId &stop) {
-    return collectedDepTimes[stop];
-  }
-
-  void bitWiseOr(std::vector<bool> &to, const std::vector<bool> &from) {
-    AssertMsg(to.size() == from.size(),
-              "BitWiseOr - the two vectors have different length!\n");
+    void bitWiseOr(std::vector<bool>& to, const std::vector<bool>& from) {
+        AssertMsg(to.size() == from.size(), "BitWiseOr - the two vectors have different length!\n");
 #pragma omp simd
-    for (size_t i = 0; i < to.size(); ++i) {
-      to[i] = to[i] | from[i];
-    }
-  }
-
-  void collectAllDepTimes(const int minDepartureTime = 0,
-                          const int maxDepartureTime = 86400,
-                          const bool verbose = true) noexcept {
-    if (verbose)
-      std::cout << "Start by collecting all the departure stopevents into the "
-                   "approriate stop bucket!\n";
-    for (StopId stop(0); stop < data.numberOfStops(); ++stop) {
-      collectedDepTimes[stop].clear();
-      // collectedDepTimes[stop].reserve((int)data.numberOfTrips() >> 3); //
-      // adjustable
-      collectedDepTimes[stop].reserve(1000);  // adjustable
-    }
-
-    Progress progress(data.numberOfRoutes());
-    for (const RouteId route : data.routes()) {
-      const size_t numberOfStops = data.numberOfStopsInRoute(route);
-      const StopId *stops = data.raptorData.stopArrayOfRoute(route);
-      const TripId firstTrip = data.firstTripOfRoute[route];
-      const RAPTOR::StopEvent *stopEvents = data.eventArrayOfTrip(firstTrip);
-      for (size_t stopEventIndex = 0;
-           stopEventIndex < data.raptorData.numberOfStopEventsInRoute(route);
-           ++stopEventIndex) {
-        if ((stopEventIndex + 1) % numberOfStops == 0) continue;
-        const StopId stop = stops[stopEventIndex % numberOfStops];
-        // add it to the current stop
-        int departureTime = stopEvents[stopEventIndex].departureTime;
-        // seems a little weird - it could be that a departure is outside
-        // the maxDepartureTime, but due to travel is is legal
-        if (!(departureTime < minDepartureTime ||
-              departureTime >= maxDepartureTime)) {
-          collectedDepTimes[stop].push_back(TripStopIndex(
-              TripId(firstTrip + (int)(stopEventIndex / numberOfStops)),
-              StopIndex(stopEventIndex % numberOfStops), departureTime));
+        for (size_t i = 0; i < to.size(); ++i) {
+            to[i] = to[i] | from[i];
         }
-        // now for every transfer reachable stop
-        for (const Edge edge : data.raptorData.transferGraph.edgesFrom(stop)) {
-          const Vertex transferStop =
-              data.raptorData.transferGraph.get(ToVertex, edge);
-          const int walkingTime =
-              data.raptorData.transferGraph.get(TravelTime, edge);
-          AssertMsg(walkingTime != INFTY,
-                    "Walking Time is infinity, which does not make sense!\n");
-          int transferDepTime = departureTime - walkingTime;
-          if (transferDepTime < minDepartureTime ||
-              transferDepTime >= maxDepartureTime)
-            continue;
-          collectedDepTimes[transferStop].push_back(TripStopIndex(
-              TripId(firstTrip + (int)(stopEventIndex / numberOfStops)),
-              StopIndex(stopEventIndex % numberOfStops), transferDepTime));
+    }
+
+    void collectAllDepTimes(const int minDepartureTime = 0, const int maxDepartureTime = 86400,
+                            const bool verbose = true) noexcept {
+        if (verbose)
+            std::cout << "Start by collecting all the departure stopevents into the "
+                         "approriate stop bucket!\n";
+        for (StopId stop(0); stop < data.numberOfStops(); ++stop) {
+            collectedDepTimes[stop].clear();
+            // collectedDepTimes[stop].reserve((int)data.numberOfTrips() >> 3); //
+            // adjustable
+            collectedDepTimes[stop].reserve(1000); // adjustable
         }
-      }
-      ++progress;
+
+        Progress progress(data.numberOfRoutes());
+        for (const RouteId route : data.routes()) {
+            const size_t numberOfStops = data.numberOfStopsInRoute(route);
+            const StopId* stops = data.raptorData.stopArrayOfRoute(route);
+            const TripId firstTrip = data.firstTripOfRoute[route];
+            const RAPTOR::StopEvent* stopEvents = data.eventArrayOfTrip(firstTrip);
+            for (size_t stopEventIndex = 0; stopEventIndex < data.raptorData.numberOfStopEventsInRoute(route);
+                 ++stopEventIndex) {
+                if ((stopEventIndex + 1) % numberOfStops == 0) continue;
+                const StopId stop = stops[stopEventIndex % numberOfStops];
+                // add it to the current stop
+                int departureTime = stopEvents[stopEventIndex].departureTime;
+                // seems a little weird - it could be that a departure is outside
+                // the maxDepartureTime, but due to travel is is legal
+                if (!(departureTime < minDepartureTime || departureTime >= maxDepartureTime)) {
+                    collectedDepTimes[stop].push_back(
+                        TripStopIndex(TripId(firstTrip + (int)(stopEventIndex / numberOfStops)),
+                                      StopIndex(stopEventIndex % numberOfStops), departureTime));
+                }
+                // now for every transfer reachable stop
+                for (const Edge edge : data.raptorData.transferGraph.edgesFrom(stop)) {
+                    const Vertex transferStop = data.raptorData.transferGraph.get(ToVertex, edge);
+                    const int walkingTime = data.raptorData.transferGraph.get(TravelTime, edge);
+                    AssertMsg(walkingTime != INFTY, "Walking Time is infinity, which does not make sense!\n");
+                    int transferDepTime = departureTime - walkingTime;
+                    if (transferDepTime < minDepartureTime || transferDepTime >= maxDepartureTime) continue;
+                    collectedDepTimes[transferStop].push_back(
+                        TripStopIndex(TripId(firstTrip + (int)(stopEventIndex / numberOfStops)),
+                                      StopIndex(stopEventIndex % numberOfStops), transferDepTime));
+                }
+            }
+            ++progress;
+        }
+
+        for (StopId stop(0); stop < data.numberOfStops(); ++stop) {
+            std::stable_sort(collectedDepTimes[stop].begin(), collectedDepTimes[stop].end(),
+                             [](const TripStopIndex a, const TripStopIndex b) { return a.depTime > b.depTime; });
+        }
+
+        progress.finished();
     }
 
-    for (StopId stop(0); stop < data.numberOfStops(); ++stop) {
-      std::stable_sort(collectedDepTimes[stop].begin(),
-                       collectedDepTimes[stop].end(),
-                       [](const TripStopIndex a, const TripStopIndex b) {
-                         return a.depTime > b.depTime;
-                       });
-    }
+private:
+    std::vector<std::vector<uint8_t>> uint8InitialFlags;
+    Data& data;
+    SplitStopEventGraph splitEventGraph;
 
-    progress.finished();
-  }
+    const int numberOfThreads;
+    const int pinMultiplier;
+    std::vector<TripBased::RouteLabel> routeLabels;
 
- private:
-  std::vector<std::vector<uint8_t>> uint8InitialFlags;
-  Data &data;
-  SplitStopEventGraph splitEventGraph;
+    DynamicTransferGraphWithARCFlag stopEventGraphDynamic;
 
-  const int numberOfThreads;
-  const int pinMultiplier;
-  std::vector<TripBased::RouteLabel> routeLabels;
-
-  DynamicTransferGraphWithARCFlag stopEventGraphDynamic;
-
-  std::vector<std::vector<TripStopIndex>> collectedDepTimes;
+    std::vector<std::vector<TripStopIndex>> collectedDepTimes;
 };
-}  // namespace TripBased
+} // namespace TripBased

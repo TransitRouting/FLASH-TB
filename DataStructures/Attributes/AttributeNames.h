@@ -13,42 +13,41 @@ using AttributeNameType = uint32_t;
 // inferred from a parameter
 template <AttributeNameType NAME, typename VALUE_TYPE>
 class AttributeValueWrapper {
- public:
-  constexpr static AttributeNameType Name = NAME;
-  using ValueType = VALUE_TYPE;
-  using Type = AttributeValueWrapper<Name, ValueType>;
+public:
+    constexpr static AttributeNameType Name = NAME;
+    using ValueType = VALUE_TYPE;
+    using Type = AttributeValueWrapper<Name, ValueType>;
 
- public:
-  AttributeValueWrapper(const ValueType& value) : internalValue(value) {}
+public:
+    AttributeValueWrapper(const ValueType& value) : internalValue(value) {}
 
-  inline operator const ValueType&() const noexcept { return internalValue; }
+    inline operator const ValueType&() const noexcept { return internalValue; }
 
-  inline const ValueType& value() const noexcept { return internalValue; }
+    inline const ValueType& value() const noexcept { return internalValue; }
 
- private:
-  const ValueType& internalValue;
+private:
+    const ValueType& internalValue;
 };
 
 // Helper template class, so that the AttributeNameType can be inferred from a
 // parameter
 template <AttributeNameType NAME>
 class AttributeNameWrapper {
- public:
-  constexpr static AttributeNameType Name = NAME;
-  using Type = AttributeNameWrapper<Name>;
+public:
+    constexpr static AttributeNameType Name = NAME;
+    using Type = AttributeNameWrapper<Name>;
 
- public:
-  constexpr AttributeNameWrapper() {}
+public:
+    constexpr AttributeNameWrapper() {}
 
-  // Automatic conversion back to plain AttributeNameType, which will be used
-  // as template parameter
-  constexpr inline operator AttributeNameType() const noexcept { return Name; }
+    // Automatic conversion back to plain AttributeNameType, which will be used
+    // as template parameter
+    constexpr inline operator AttributeNameType() const noexcept { return Name; }
 
-  template <typename TYPE>
-  inline AttributeValueWrapper<Name, TYPE> operator()(
-      const TYPE& value) const noexcept {
-    return AttributeValueWrapper<Name, TYPE>(value);
-  }
+    template <typename TYPE>
+    inline AttributeValueWrapper<Name, TYPE> operator()(const TYPE& value) const noexcept {
+        return AttributeValueWrapper<Name, TYPE>(value);
+    }
 };
 
 // List of possible Attribute names, so that we can refer to Attributes by a
@@ -96,7 +95,7 @@ using ARCFlag = AttributeNameWrapper<28>;
 using UnknownType = AttributeNameWrapper<29>;
 // Ensure that Unknown is the last entry!
 
-}  // namespace ImplementationDetail
+} // namespace ImplementationDetail
 
 constexpr ImplementationDetail::WeightType Weight;
 constexpr ImplementationDetail::LengthType Length;
@@ -170,64 +169,53 @@ constexpr const char* AttributeNameStrings[] = {
 
 // Number of attribute names currently available. Used for automatic
 // AttributeNameType to string conversion
-constexpr std::size_t NumberOfAttributeNames =
-    sizeof(ImplementationDetail::AttributeNameStrings) / sizeof(char*);
+constexpr std::size_t NumberOfAttributeNames = sizeof(ImplementationDetail::AttributeNameStrings) / sizeof(char*);
 
 // Converts an attribute (as runtime parameter) to the corresponding string
-inline constexpr const char* attributeToString(
-    const AttributeNameType name) noexcept {
-  return (name >= NumberOfAttributeNames)
-             ? "Unknown"
-             : ImplementationDetail::AttributeNameStrings[name];
+inline constexpr const char* attributeToString(const AttributeNameType name) noexcept {
+    return (name >= NumberOfAttributeNames) ? "Unknown" : ImplementationDetail::AttributeNameStrings[name];
 }
 
 // Converts an attribute (as template parameter) to the corresponding string
 template <AttributeNameType ATTRIBUTE_NAME>
 inline constexpr const char* attributeToString() noexcept {
-  return (ATTRIBUTE_NAME >= NumberOfAttributeNames)
-             ? "Unknown"
-             : ImplementationDetail::AttributeNameStrings[ATTRIBUTE_NAME];
+    return (ATTRIBUTE_NAME >= NumberOfAttributeNames) ? "Unknown"
+                                                      : ImplementationDetail::AttributeNameStrings[ATTRIBUTE_NAME];
 }
 
 template <AttributeNameType ATTRIBUTE_NAME, typename TYPE>
-inline TYPE getAttributeValue(const AttributeNameWrapper<ATTRIBUTE_NAME>,
-                              const TYPE& defaultValue) noexcept {
-  return defaultValue;
+inline TYPE getAttributeValue(const AttributeNameWrapper<ATTRIBUTE_NAME>, const TYPE& defaultValue) noexcept {
+    return defaultValue;
 }
 
-template <AttributeNameType ATTRIBUTE_NAME, typename TYPE,
-          AttributeNameType HEAD_NAME, typename HEAD_TYPE, typename... TAIL>
-inline TYPE getAttributeValue(
-    const AttributeNameWrapper<ATTRIBUTE_NAME>, const TYPE& defaultValue,
-    const AttributeValueWrapper<HEAD_NAME, HEAD_TYPE>& head,
-    const TAIL&... tail) noexcept {
-  if constexpr ((HEAD_NAME == ATTRIBUTE_NAME) ||
-                ((HEAD_NAME == AnyAttribute) &&
-                 (std::is_convertible<HEAD_TYPE, TYPE>::value))) {
-    return head.value();
-  } else {
-    return getAttributeValue(AttributeNameWrapper<ATTRIBUTE_NAME>(),
-                             defaultValue, tail...);
-  }
+template <AttributeNameType ATTRIBUTE_NAME, typename TYPE, AttributeNameType HEAD_NAME, typename HEAD_TYPE,
+          typename... TAIL>
+inline TYPE getAttributeValue(const AttributeNameWrapper<ATTRIBUTE_NAME>, const TYPE& defaultValue,
+                              const AttributeValueWrapper<HEAD_NAME, HEAD_TYPE>& head, const TAIL&... tail) noexcept {
+    if constexpr ((HEAD_NAME == ATTRIBUTE_NAME)
+                  || ((HEAD_NAME == AnyAttribute) && (std::is_convertible<HEAD_TYPE, TYPE>::value))) {
+        return head.value();
+    } else {
+        return getAttributeValue(AttributeNameWrapper<ATTRIBUTE_NAME>(), defaultValue, tail...);
+    }
 }
 
 // Helper template class for changing the name of an attribute
 template <AttributeNameType OLD_NAME, AttributeNameType NEW_NAME>
 class NameChange {
- public:
-  constexpr static AttributeNameType OldName = OLD_NAME;
-  constexpr static AttributeNameType NewName = NEW_NAME;
-  using Type = NameChange<OldName, NewName>;
+public:
+    constexpr static AttributeNameType OldName = OLD_NAME;
+    constexpr static AttributeNameType NewName = NEW_NAME;
+    using Type = NameChange<OldName, NewName>;
 
- public:
-  constexpr NameChange() {}
+public:
+    constexpr NameChange() {}
 };
 
 template <AttributeNameType OLD_NAME, AttributeNameType NEW_NAME>
-constexpr inline NameChange<OLD_NAME, NEW_NAME> operator<<(
-    const AttributeNameWrapper<NEW_NAME>,
-    const AttributeNameWrapper<OLD_NAME>) noexcept {
-  return NameChange<OLD_NAME, NEW_NAME>();
+constexpr inline NameChange<OLD_NAME, NEW_NAME> operator<<(const AttributeNameWrapper<NEW_NAME>,
+                                                           const AttributeNameWrapper<OLD_NAME>) noexcept {
+    return NameChange<OLD_NAME, NEW_NAME>();
 }
 
 namespace ImplementationDetail {
@@ -238,30 +226,20 @@ struct GetOldAttributeName;
 template <AttributeNameType NAME>
 struct GetOldAttributeName<NAME, Meta::List<>> : AttributeNameWrapper<NAME> {};
 
-template <AttributeNameType NAME, AttributeNameType OLD_NAME,
-          AttributeNameType NEW_NAME, typename... NAME_CHANGES>
-struct GetOldAttributeName<
-    NAME, Meta::List<NameChange<OLD_NAME, NEW_NAME>, NAME_CHANGES...>>
-    : Meta::IF<(NAME == OLD_NAME), UnknownType,
-               GetOldAttributeName<NAME, Meta::List<NAME_CHANGES...>>> {};
+template <AttributeNameType NAME, AttributeNameType OLD_NAME, AttributeNameType NEW_NAME, typename... NAME_CHANGES>
+struct GetOldAttributeName<NAME, Meta::List<NameChange<OLD_NAME, NEW_NAME>, NAME_CHANGES...>>
+    : Meta::IF<(NAME == OLD_NAME), UnknownType, GetOldAttributeName<NAME, Meta::List<NAME_CHANGES...>>> {};
 
-template <AttributeNameType NAME, AttributeNameType OLD_NAME,
-          AttributeNameType NEW_NAME, typename... NAME_CHANGES,
+template <AttributeNameType NAME, AttributeNameType OLD_NAME, AttributeNameType NEW_NAME, typename... NAME_CHANGES,
           typename... LIST>
-struct GetOldAttributeName<NAME, Meta::List<LIST...>,
-                           NameChange<OLD_NAME, NEW_NAME>, NAME_CHANGES...>
+struct GetOldAttributeName<NAME, Meta::List<LIST...>, NameChange<OLD_NAME, NEW_NAME>, NAME_CHANGES...>
     : Meta::IF<(NAME == NEW_NAME), AttributeNameWrapper<OLD_NAME>,
-               GetOldAttributeName<
-                   NAME, Meta::List<NameChange<OLD_NAME, NEW_NAME>, LIST...>,
-                   NAME_CHANGES...>> {};
+               GetOldAttributeName<NAME, Meta::List<NameChange<OLD_NAME, NEW_NAME>, LIST...>, NAME_CHANGES...>> {};
 
-}  // namespace ImplementationDetail
+} // namespace ImplementationDetail
 
 template <AttributeNameType NAME, typename... NAME_CHANGES>
-inline constexpr ImplementationDetail::GetOldAttributeName<NAME, Meta::List<>,
-                                                           NAME_CHANGES...>
-getOldAttributeName(const AttributeNameWrapper<NAME>,
-                    const NAME_CHANGES...) noexcept {
-  return ImplementationDetail::GetOldAttributeName<NAME, Meta::List<>,
-                                                   NAME_CHANGES...>();
+inline constexpr ImplementationDetail::GetOldAttributeName<NAME, Meta::List<>, NAME_CHANGES...>
+getOldAttributeName(const AttributeNameWrapper<NAME>, const NAME_CHANGES...) noexcept {
+    return ImplementationDetail::GetOldAttributeName<NAME, Meta::List<>, NAME_CHANGES...>();
 }

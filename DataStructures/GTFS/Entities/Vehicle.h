@@ -16,15 +16,14 @@ constexpr int CableCar = 5;
 constexpr int Gondola = 6;
 constexpr int Funicular = 7;
 constexpr int Undefined = -1;
-}  // namespace Type
+} // namespace Type
 
-const std::string TypeNames[] = {"Tram",  "Subway",    "Rail",    "Bus",
-                                 "Ferry", "Cable Car", "Gondola", "Funicular"};
+const std::string TypeNames[] = {"Tram", "Subway", "Rail", "Bus", "Ferry", "Cable Car", "Gondola", "Funicular"};
 const std::vector<int> Types = {3, 2, 4, 5, 6, 7, 1, 0};
 
 inline std::string typeName(const int type) noexcept {
-  if (type < 0 || type > 7) return "Undefined";
-  return TypeNames[type];
+    if (type < 0 || type > 7) return "Undefined";
+    return TypeNames[type];
 }
 
-}  // namespace GTFS
+} // namespace GTFS
