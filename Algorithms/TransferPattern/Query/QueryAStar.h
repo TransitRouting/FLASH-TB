@@ -74,6 +74,64 @@ public:
               bestTravelTime(0),
               bestNumTrips(0) {}
 
+        DijkstraLabel(DijkstraLabel&& other) noexcept
+            : arrivalTime(other.arrivalTime),
+              parentDepartureTime(other.parentDepartureTime),
+              numberOfTrips(other.numberOfTrips),
+              routeId(other.routeId),
+              parentStop(other.parentStop),
+              parentIndex(other.parentIndex),
+              bestTravelTime(other.bestTravelTime),
+              bestNumTrips(other.bestNumTrips) {
+            other.arrivalTime = never;
+            other.parentDepartureTime = never;
+            other.numberOfTrips = 255;
+            other.routeId = noRouteId;
+            other.parentStop = noStop;
+            other.parentIndex = -1;
+            other.bestTravelTime = 0;
+            other.bestNumTrips = 0;
+        }
+
+        DijkstraLabel& operator=(const DijkstraLabel& other) {
+            if (this == &other) return *this; // Self-assignment check
+
+            arrivalTime = other.arrivalTime;
+            parentDepartureTime = other.parentDepartureTime;
+            numberOfTrips = other.numberOfTrips;
+            routeId = other.routeId;
+            parentStop = other.parentStop;
+            parentIndex = other.parentIndex;
+            bestTravelTime = other.bestTravelTime;
+            bestNumTrips = other.bestNumTrips;
+
+            return *this;
+        }
+
+        DijkstraLabel& operator=(DijkstraLabel&& other) noexcept {
+            if (this == &other) return *this; // Self-assignment check
+
+            arrivalTime = other.arrivalTime;
+            parentDepartureTime = other.parentDepartureTime;
+            numberOfTrips = other.numberOfTrips;
+            routeId = other.routeId;
+            parentStop = other.parentStop;
+            parentIndex = other.parentIndex;
+            bestTravelTime = other.bestTravelTime;
+            bestNumTrips = other.bestNumTrips;
+
+            other.arrivalTime = never;
+            other.parentDepartureTime = never;
+            other.numberOfTrips = 255;
+            other.routeId = noRouteId;
+            other.parentStop = noStop;
+            other.parentIndex = -1;
+            other.bestTravelTime = 0;
+            other.bestNumTrips = 0;
+
+            return *this;
+        }
+
         inline void set(int newArrivalTime, int newParentDepartureTime, int newNumberOfTrips, RouteId newRouteId,
                         StopId newParentStop, size_t newParentIndex, int newBestTravelTime, uint8_t newBestNumTrips) {
             arrivalTime = newArrivalTime;

@@ -6,16 +6,22 @@
 #include "../../../DataStructures/RAPTOR/Entities/JourneyWithStopEvent.h"
 #include "../../../DataStructures/TransferPattern/Data.h"
 #include "../../../DataStructures/TripBased/Data.h"
-
-/* #include "../../TripBased/Query/ProfileOneToAllQuery.h" */
-/* #include "RangeRAPTOR/RangeRAPTOR.h" */
-
 #include "../../../Helpers/Console/Progress.h"
 #include "../../../Helpers/MultiThreading.h"
 #include "../../../Helpers/Vector/Vector.h"
 #include <google/dense_hash_map>
 
 namespace TransferPattern {
+struct VectorHasher {
+    template <typename T>
+    std::size_t operator()(const std::vector<T>& vec) const {
+        std::size_t seed = 0;
+        for (const auto& elem : vec) {
+            seed ^= std::hash<std::size_t>{}(elem.value()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
 
 struct eqVecStopid {
     bool operator()(const std::vector<StopId>& a, const std::vector<StopId>& b) const { return a == b; }
@@ -140,7 +146,7 @@ private:
 
     DynamicDAGTransferPattern dynamicDAG;
 
-    google::dense_hash_map<std::vector<StopId>, Vertex, std::VectorHasher<StopId>, eqVecStopid> seenPrefix;
+    google::dense_hash_map<std::vector<StopId>, Vertex, VectorHasher, eqVecStopid> seenPrefix;
     const int minDep;
     const int maxDep;
 };

@@ -23,7 +23,7 @@ function(add_runnable name)
     target_include_directories(${name} PUBLIC ${PROJECT_SOURCE_DIR}/../ExternalLibs/sparsehash/include)
 endfunction()
 
-set(RUNNABLES FLASHTB Network ULTRA)
+set(RUNNABLES FLASHTB Network TP ULTRA)
 foreach(f ${RUNNABLES})
     add_runnable(${f} Runnables/${f}.cpp)
 endforeach()

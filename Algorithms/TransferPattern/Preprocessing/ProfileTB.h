@@ -109,7 +109,7 @@ public:
           queue(data.numberOfStopEvents()),
           edgeRanges(data.numberOfStopEvents()),
           queueSize(0),
-          reachedIndex(data),
+          profileReachedIndex(data),
           edgeLabels(data.stopEventGraph.numEdges()),
           sourceStop(noStop),
           minDepartureTime(never),
@@ -298,7 +298,7 @@ private:
     inline void clear() noexcept {
         queueSize = 0;
 
-        reachedIndex.clear();
+        profileReachedIndex.clear();
         targetLabels.assign(data.raptorData.stopData.size(), emptyTargetLabels);
         minArrivalTimeFastLookUp.assign(data.raptorData.stopData.size(), emptyMinArrivalTimeFastLookUp);
         targetLabelChanged.assign(data.raptorData.stopData.size(), emptyTargetLabelChanged);
@@ -448,23 +448,24 @@ private:
 
     inline void enqueue(const TripId trip, const StopIndex index) noexcept {
         profiler.countMetric(METRIC_ENQUEUES);
-        if (reachedIndex.alreadyReached(trip, index, 1)) return;
+        if (profileReachedIndex.alreadyReached(trip, index, 1)) return;
         const StopEventId firstEvent = data.firstStopEventOfTrip[trip];
-        queue[queueSize] = TripLabel(StopEventId(firstEvent + index), StopEventId(firstEvent + reachedIndex(trip, 1)));
+        queue[queueSize] =
+            TripLabel(StopEventId(firstEvent + index), StopEventId(firstEvent + profileReachedIndex(trip, 1)));
         queueSize++;
         AssertMsg(queueSize <= queue.size(), "Queue is overfull!");
-        reachedIndex.update(trip, index, 1);
+        profileReachedIndex.update(trip, index, 1);
     }
 
     inline void enqueue(const Edge edge, const size_t parent, const u_int8_t n) noexcept {
         profiler.countMetric(METRIC_ENQUEUES);
         const EdgeLabel& label = edgeLabels[edge];
-        if (reachedIndex.alreadyReached(label.trip, label.stopEvent - label.firstEvent, n + 1)) return;
+        if (profileReachedIndex.alreadyReached(label.trip, label.stopEvent - label.firstEvent, n + 1)) return;
         queue[queueSize] =
-            TripLabel(label.stopEvent, StopEventId(label.firstEvent + reachedIndex(label.trip, n + 1)), parent);
+            TripLabel(label.stopEvent, StopEventId(label.firstEvent + profileReachedIndex(label.trip, n + 1)), parent);
         queueSize++;
         AssertMsg(queueSize <= queue.size(), "Queue is overfull!");
-        reachedIndex.update(label.trip, StopIndex(label.stopEvent - label.firstEvent), n + 1);
+        profileReachedIndex.update(label.trip, StopIndex(label.stopEvent - label.firstEvent), n + 1);
     }
 
     inline void addTargetLabel(const StopId stop, const int newArrivalTime, const u_int32_t parent = -1,

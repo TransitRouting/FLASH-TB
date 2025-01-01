@@ -108,8 +108,8 @@ template <typename GRAPH, typename OPERATION>
 struct SimpleOperation {
     SimpleOperation(const GRAPH& graph, const OPERATION& operation) : graph(graph), operation(operation) {}
     inline void operator()(const Edge edge, const Vertex) { operation(graph.get(ToVertex, edge)); }
-    OPERATION operation;
     const GRAPH& graph;
+    OPERATION operation;
 };
 
 template <typename GRAPH, typename TRAVERSE_TREE_EDGE = NO_OPERATION, typename TRAVERSE_NON_TREE_EDGE = NO_OPERATION,

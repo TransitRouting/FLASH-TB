@@ -56,6 +56,59 @@ public:
               parentStop(sourceStop),
               parentIndex(0) {}
 
+        DijkstraLabel(const DijkstraLabel& other)
+            : arrivalTime(other.arrivalTime),
+              parentDepartureTime(other.parentDepartureTime),
+              numberOfTrips(other.numberOfTrips),
+              routeId(other.routeId),
+              parentStop(other.parentStop),
+              parentIndex(other.parentIndex) {}
+
+        DijkstraLabel(DijkstraLabel&& other) noexcept
+            : arrivalTime(std::move(other.arrivalTime)),
+              parentDepartureTime(std::move(other.parentDepartureTime)),
+              numberOfTrips(std::move(other.numberOfTrips)),
+              routeId(std::move(other.routeId)),
+              parentStop(std::move(other.parentStop)),
+              parentIndex(std::move(other.parentIndex)) {
+            other.reset();
+        }
+
+        DijkstraLabel& operator=(const DijkstraLabel& other) {
+            if (this != &other) {
+                arrivalTime = other.arrivalTime;
+                parentDepartureTime = other.parentDepartureTime;
+                numberOfTrips = other.numberOfTrips;
+                routeId = other.routeId;
+                parentStop = other.parentStop;
+                parentIndex = other.parentIndex;
+            }
+            return *this;
+        }
+
+        DijkstraLabel& operator=(DijkstraLabel&& other) noexcept {
+            if (this != &other) {
+                arrivalTime = std::move(other.arrivalTime);
+                parentDepartureTime = std::move(other.parentDepartureTime);
+                numberOfTrips = std::move(other.numberOfTrips);
+                routeId = std::move(other.routeId);
+                parentStop = std::move(other.parentStop);
+                parentIndex = std::move(other.parentIndex);
+
+                other.reset();
+            }
+            return *this;
+        }
+
+        void reset() {
+            arrivalTime = never;
+            parentDepartureTime = never;
+            numberOfTrips = 255;
+            routeId = noRouteId;
+            parentStop = noStop;
+            parentIndex = -1;
+        }
+
         inline void set(const int newArrivalTime, const int newParentDepartureTime, const int newNumberOfTrips,
                         const RouteId newRouteId, const StopId newParentStop, const size_t newParentIndex) {
             arrivalTime = newArrivalTime;
