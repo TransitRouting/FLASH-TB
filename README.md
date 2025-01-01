@@ -54,6 +54,8 @@ Moritz Potthoff, Jonas Sauer
 Accepted for publication at the 22nd Symposium on Algorithmic Approaches for Transportation Modelling, Optimization, and Systems (ATMOS'22)
 
 ## Usage
+Before building anything, make sure to also download the submodules.
+
 To compile all executables in release mode, run
 
 ```bash
