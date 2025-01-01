@@ -1,8 +1,4 @@
 .idea/
 cmake-build-debug/
 cmake-build-release/
-Runnables/ARCTB
-Runnables/ULTRA
-Runnables/Network
-Runnables/readcache
 Datasets/*

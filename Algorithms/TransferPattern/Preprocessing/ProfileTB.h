@@ -124,7 +124,6 @@ public:
         emptyMinArrivalTimeFastLookUp.assign(16, INFTY);
         targetLabels.assign(data.raptorData.stopData.size(), emptyTargetLabels);
         targetLabelChanged.assign(data.raptorData.stopData.size(), emptyTargetLabelChanged);
-        minArrivalTimeFastLookUp.assign(data.raptorData.stopData.size(), emptyMinArrivalTimeFastLookUp);
 
         reverseTransferGraph.revert();
         for (const Edge edge : data.stopEventGraph.edges()) {
@@ -300,7 +299,6 @@ private:
 
         profileReachedIndex.clear();
         targetLabels.assign(data.raptorData.stopData.size(), emptyTargetLabels);
-        minArrivalTimeFastLookUp.assign(data.raptorData.stopData.size(), emptyMinArrivalTimeFastLookUp);
         targetLabelChanged.assign(data.raptorData.stopData.size(), emptyTargetLabelChanged);
 
         bestTravelTime.assign(data.raptorData.numberOfStops(), 0);
@@ -341,7 +339,16 @@ private:
             }
         }
         reachedRoutes.sort();
-        for (const RouteId route : reachedRoutes) {
+        auto& valuesToLoopOver = reachedRoutes.getValues();
+
+        for (size_t i = 0; i < valuesToLoopOver.size(); ++i) {
+#ifdef ENABLE_PREFETCH
+            if (i + 4 < valuesToLoopOver.size()) {
+                __builtin_prefetch(data.raptorData.stopArrayOfRoute(valuesToLoopOver[i + 4]));
+                __builtin_prefetch(&(data.firstTripOfRoute[valuesToLoopOver[i + 4]]));
+            }
+#endif
+            const RouteId route = valuesToLoopOver[i];
             const size_t numberOfStops = data.numberOfStopsInRoute(route);
             const StopId* stops = data.raptorData.stopArrayOfRoute(route);
             const RAPTOR::StopEvent* stopEvents = data.raptorData.firstTripOfRoute(route);
@@ -374,7 +381,8 @@ private:
         int travelTime(-1);
         StopId stop(-1);
         Vertex transferStop(-1);
-        while (roundBegin < roundEnd && n < 16) {
+
+        while (roundBegin < roundEnd && n < 15) {
             profiler.countMetric(METRIC_ROUNDS);
             // Evaluate final transfers in order to check if the target is
             // reachable
@@ -390,7 +398,7 @@ private:
                 for (StopEventId j = label.begin; j < label.end; ++j) {
                     stop = data.arrivalEvents[j].stop;
                     profiler.countMetric(METRIC_SCANNED_STOPS);
-                    if (data.arrivalEvents[j].arrivalTime >= minArrivalTimeFastLookUp[stop][n]) continue;
+                    if (data.arrivalEvents[j].arrivalTime >= targetLabels[stop][n].arrivalTime) continue;
                     addTargetLabel(stop, data.arrivalEvents[j].arrivalTime, i, n);
                     AssertMsg(data.raptorData.transferGraph.isVertex(stop),
                               "This stop is not represented in the transfergraph!\n");
@@ -411,23 +419,15 @@ private:
                 }
 #endif
                 TripLabel& label = queue[i];
-                // Jonas: pruning idea
-                /* maxMinArrivalTime = 0;
-                for (StopEventId j(label.begin); j < label.end; ++j) {
-                    maxMinArrivalTime = std::max(maxMinArrivalTime,
-                minArrivalTimeFastLookUp[data.arrivalEvents[j].stop][n]);
-                }
-                if (data.arrivalEvents[label.begin].arrivalTime > maxMinArrivalTime)
-                    continue;
-                */
-                StopEventId oldEnd = label.end;
-                label.end = label.begin;
-                for (StopEventId j(label.begin); j < oldEnd; ++j) {
-                    const int arrivalTime = data.arrivalEvents[j].arrivalTime;
-                    const StopId stop = data.arrivalEvents[j].stop;
-                    if (minArrivalTimeFastLookUp[stop][n] < arrivalTime) continue;
-                    label.end = StopEventId(j + 1);
-                }
+                /* StopEventId oldEnd = label.end; */
+                /* label.end = label.begin; */
+                /* for (StopEventId j(label.begin); j < oldEnd; ++j) { */
+                /*     const int arrivalTime = data.arrivalEvents[j].arrivalTime; */
+                /*     const StopId stop = data.arrivalEvents[j].stop; */
+
+                /*     bool overwrite = (targetLabels[stop][n].arrivalTime < arrivalTime); */
+                /*     label.end = (overwrite ? StopEventId(j + 1) : label.end); */
+                /* } */
                 edgeRanges[i].begin = data.stopEventGraph.beginEdgeFrom(Vertex(label.begin));
                 edgeRanges[i].end = data.stopEventGraph.beginEdgeFrom(Vertex(label.end));
             }
@@ -471,21 +471,17 @@ private:
     inline void addTargetLabel(const StopId stop, const int newArrivalTime, const u_int32_t parent = -1,
                                const u_int8_t n = 0) noexcept {
         profiler.countMetric(METRIC_ADD_JOURNEYS);
-        if (newArrivalTime < minArrivalTimeFastLookUp[stop][n]) {
+        if (newArrivalTime < targetLabels[stop][n].arrivalTime) {
             targetLabels[stop][n].arrivalTime = newArrivalTime;
             targetLabels[stop][n].parent = parent;
 
             targetLabelChanged[stop][n] = true;
 
-            minArrivalTimeFastLookUp[stop][n] = newArrivalTime;
-
-#pragma omp simd
             for (int i = n + 1; i < 16; ++i) {
                 if (targetLabels[stop][i].arrivalTime > targetLabels[stop][n].arrivalTime) {
-                    targetLabels[stop][i].clear();
+                    targetLabels[stop][i].arrivalTime = newArrivalTime;
+                    targetLabels[stop][i].parent = parent;
                 }
-                if (minArrivalTimeFastLookUp[stop][i] > newArrivalTime)
-                    minArrivalTimeFastLookUp[stop][i] = newArrivalTime;
             }
         }
     }
@@ -585,7 +581,6 @@ private:
     // for every stop
     std::vector<std::vector<TargetLabel>> targetLabels;
     std::vector<std::vector<bool>> targetLabelChanged;
-    std::vector<std::vector<long>> minArrivalTimeFastLookUp;
     std::vector<TargetLabel> emptyTargetLabels;
     std::vector<bool> emptyTargetLabelChanged;
     std::vector<long> emptyMinArrivalTimeFastLookUp;

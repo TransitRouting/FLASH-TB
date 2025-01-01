@@ -58,7 +58,7 @@ public:
         dynamicDAG.addEdge(newVertex, beforeVertex).set(TravelTime, travelTime);
     }
 
-    inline void computeTransferPatternForStop(const StopId stop = noStop) {
+    inline void computeTransferPatternForStop(const StopId stop) {
         AssertMsg(data.raptorData.isStop(stop), "Stop is not valid!");
         clear();
 
@@ -141,7 +141,7 @@ public:
     }
 
 private:
-    TripBased::Data data;
+    TripBased::Data& data;
     TripBased::ProfileTB<TripBased::NoProfiler> query;
 
     DynamicDAGTransferPattern dynamicDAG;
