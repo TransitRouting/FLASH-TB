@@ -66,9 +66,81 @@ cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build . --target All --config Rel
 
 Make sure you have OpenMP installed. This will create the executables ``FLASHTB``, ``Network``, ``ULTRA`` and ``TP``
 
-In the ``Runnables/`` directory you will find some example files on how to use the FLASH TB algorithm.
+ In the ``Runnables/`` directory you will find some example files on how to use the FLASH TB algorithm.
+
 1. Start by downloading a GTFS dataset using ``downloadExample.sh``.
+
 2. Then run ``./FLASHTB`` and run ``runScript example.script``. This will build all the necessary binaries, including trip.binary and raptor.binary, as well as the layout graph in METIS format.
-3. This METIS file can be partitioned using a graph partitioner of your choice.  For example: 
+
+3. This METIS file can be partitioned using a graph partitioner of your choice.  For example:
+
 ```./KaHIP/deploy/kaffpaE FLASH-TB/Datasets/Karlsruhe/raptor.layout.graph --k=32 --imbalance=5 --preconfiguration=social --time_limit=60 --output_filename=FLASH-TB/Datasets/Karlsruhe/raptor.partition32.txt```
+
 4. After this step, you can call ``runScript exampleFLASHTB.script`` in ``./FLASHTB`` to build FLASHTB based on the calculated partition. This will also evaluate query performance.
+
+## Example
+
+```
+> computeArcFlagTB ../Datasets/Karlsruhe/tripULTRA.binary ../Datasets/Karlsruhe/arctrip.binary
+(...)
+SplitStopEventGraph Info:
+	Number of vertices: 1854595
+	Number of local edges: 885771
+	Number of transfer edges: 3215901
+	Total number of edges: 4101672
+	Number of partitions (k): 32
+Computing ARCFlags with 6 threads.
+Start by collecting all the departure stopevents into the approriate stop bucket!
+100.00% (149ms)
+Starting the computation!
+100.00% (3m 16s 338ms)
+Preprocessing done!
+Now deleting unnecessary edges
+Arc-Flag Stats:
+Number of Flags set:  7625150 (10%)
+Number of removed edges:  1864445 (45%)
+100.00% (614ms)
+Saving the compressed flags!
+Done with compressed flags!
+> runTransitiveArcTripBasedQueries ../Datasets/arctrip.binary 10000
+(...)
+Scanned trips: 389.49
+Total time: 110µs
+Avg. journeys: 1.52
+```
+
+Using the executable ``TP``, you can also compute Transfer Patterns given a trip binary.
+```
+> computeTPUsingTB ../Datasets/Karlsruhe/trip.binary ../Datasets/Karlsruhe/tp.binary
+(...)
+Building the Direct-Connection-Lookup Datastructure
+100.00% (15ms)
+Building the Stop-Lookup Datastructure
+100.00% (3ms)
+Computing Transfer Pattern with 6 # of threads!
+100.00% (3m 32s 998ms)
+Total Size: 2.20GB
+Average # Nodes:  16,439.00
+Average # Edges:  55,323.00
+> runTPQueries ../Datasets/Karlsruhe/tp.binary 10000 false
+(...)
+Info about Transfer Pattern:
+	Total # of vertices:  70,560,289
+	Total # of edges:  237,448,327
+	Max # of vertices:  44,240
+	Max # of edges:  179,791
+	Storage usage of all TP:  2.20GB
+#### Stats ####
+# Vertices in Query Graph  : 43.80
+# Edges in Query Graph : 42.81
+# Settled Vertices : 25.87
+# Relaxed Transfer Edges : 48.67
+# Added Labels into bags : 26.31
+Load and build Query Graph : 9µs
+Clear all Datastructures : 15µs
+Initialize Source Labels : 0µs
+Evaluate Query Graph : 30µs
+Extract Journeys : 0µs
+Total Time : 56µs
+Avg. journeys  : 1.53
+```
