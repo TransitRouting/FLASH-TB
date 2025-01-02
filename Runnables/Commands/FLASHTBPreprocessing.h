@@ -274,6 +274,33 @@ public:
     }
 };
 
+class ShowFlagDistribution : public ParameterizedCommand {
+public:
+    ShowFlagDistribution(BasicShell& shell)
+        : ParameterizedCommand(shell, "showFlagDistribution",
+                               "Shows the distribution of number of bits set to true in a flag.") {
+        addParameter("Input file (trip binary)");
+    }
+
+    virtual void execute() noexcept {
+        const std::string inputFile = getParameter("Input file (trip binary)");
+        TripBased::Data data(inputFile);
+
+        std::vector<std::size_t> buckets(data.getNumberOfPartitionCells() + 1, 0);
+
+        for (const Edge edge : data.stopEventGraph.edges()) {
+            const auto& flags = data.stopEventGraph.get(ARCFlag, edge);
+            std::size_t counter = std::count(flags.begin(), flags.end(), true);
+
+            AssertMsg(counter < buckets.size(), "Counter is out of bounds!");
+            buckets[counter]++;
+        }
+
+        for (std::size_t k = 0; k < buckets.size(); ++k)
+            std::cout << k << "\t" << buckets[k] << std::endl;
+    }
+};
+
 class ComputePageRank : public ParameterizedCommand {
 public:
     ComputePageRank(BasicShell& shell)

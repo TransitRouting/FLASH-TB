@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
     new ComputeTransitiveEventToEventShortcuts(shell);
     new CreateLayoutGraph(shell);
     new ApplyPartitionToTripBased(shell);
+    new ShowFlagDistribution(shell);
     new ComputeArcFlagTB(shell);
     new ComputeArcFlagTBRAPTOR(shell);
 
