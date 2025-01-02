@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     new WriteTripBasedToCSV(shell);
     new WriteLayoutGraphToGraphML(shell);
     new WriteTripBasedToGraphML(shell);
+    new ExportTEGraphToDimacs(shell);
 
     new IntermediateMakeTransitive(shell);
     new ReduceGraph(shell);

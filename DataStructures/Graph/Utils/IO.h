@@ -45,6 +45,30 @@ inline void toDimacs(const std::string& fileBaseName, const GRAPH& graph,
 }
 
 template <typename GRAPH>
+inline void toDimacs(const std::string& fileBaseName, const GRAPH& graph, const std::vector<uint8_t>& weight) noexcept {
+    std::ofstream grOs(fileBaseName + ".gr");
+    AssertMsg(grOs, "Cannot create output stream for " << fileBaseName << ".gr");
+    AssertMsg(grOs.is_open(), "Cannot open output stream for " << fileBaseName << ".gr");
+    grOs << "p sp " << graph.numVertices() << " " << graph.numEdges() << std::endl;
+    for (const auto [edge, from] : graph.edgesWithFromVertex()) {
+        grOs << "a " << (from + 1) << " " << (graph.get(ToVertex, edge) + 1) << " " << static_cast<int>(weight[edge])
+             << std::endl;
+    }
+    grOs.close();
+    if constexpr (GRAPH::HasVertexAttribute(Coordinates)) {
+        std::ofstream coOs(fileBaseName + ".co");
+        AssertMsg(coOs, "Cannot create output stream for " << fileBaseName << ".co");
+        AssertMsg(coOs.is_open(), "Cannot open output stream for " << fileBaseName << ".co");
+        coOs << "p aux sp co " << graph.numVertices() << std::endl;
+        for (const Vertex vertex : graph.vertices()) {
+            coOs << "v " << (vertex + 1) << " " << graph.get(Coordinates, vertex).x << " "
+                 << graph.get(Coordinates, vertex).y << std::endl;
+        }
+        coOs.close();
+    }
+}
+
+template <typename GRAPH>
 inline void toDimacs(const std::string& fileBaseName, const GRAPH& graph) noexcept {
     toDimacs(fileBaseName, graph, graph.get(Weight));
 }

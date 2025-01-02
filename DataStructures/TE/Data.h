@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <omp.h>
 #include <unordered_map>
 #include <vector>
 
@@ -75,7 +76,7 @@ public:
         }
         std::sort(connections.begin(), connections.end());
 
-        DynamicTimeExpandedGraph bobTheBuilder;
+        EdgeListTimeExpandedGraph bobTheBuilder;
         bobTheBuilder.addVertices(numberOfEvents);
 
         // this allows us to keep track of the previous arrival event in order to create an edge
@@ -99,32 +100,32 @@ public:
             // add the arrival event to arrEventsAtStop
             data.arrEventsAtStop[conn.arrivalStopId].emplace_back(id + 1);
 
-            // check if can create an edge to the previous arrival event
-            // ** Trip Edge **
+            // check if can create an edge from the previous arrival event to this arrival event ** Trip Edge ** (we
+            // basically skip the current departure event)
             AssertMsg(conn.tripId < lastArrivalEventOfTrip.size(), "Trip is out of bounds!");
             if (lastArrivalEventOfTrip[conn.tripId] != numberOfEvents) {
                 AssertMsg(lastArrivalEventOfTrip[conn.tripId] < numberOfEvents, "Last Arrival Event is out of bounds!");
 
-                bobTheBuilder.addEdge(Vertex(lastArrivalEventOfTrip[conn.tripId]), Vertex(id + 1));
+                bobTheBuilder.addEdge(Vertex(lastArrivalEventOfTrip[conn.tripId]), Vertex(id + 1)).set(TransferCost, 0);
             }
 
             lastArrivalEventOfTrip[conn.tripId] = id + 1;
 
-            // try to add ** Transfer edge ** to previous departure event at stop
+            // try to add ** Transfer edge ** from previous departure event at stop
             AssertMsg(conn.departureStopId < data.stopData.size(), "Departure StopId is out of bounds!");
 
             if (!data.depEventsAtStop[conn.departureStopId].empty()) {
                 Vertex prevDep = Vertex(data.depEventsAtStop[conn.departureStopId].back());
                 AssertMsg(prevDep < numberOfEvents, "Previous Departure Event is out of bounds!");
 
-                bobTheBuilder.addEdge(prevDep, Vertex(id));
+                bobTheBuilder.addEdge(prevDep, Vertex(id)).set(TransferCost, 0);
             }
 
             // also add departure vertex to stop
             data.depEventsAtStop[conn.departureStopId].emplace_back(id);
 
             // add the edge from departure => arrival vertex
-            bobTheBuilder.addEdge(Vertex(id), Vertex(id + 1));
+            bobTheBuilder.addEdge(Vertex(id), Vertex(id + 1)).set(TransferCost, 0);
         }
 
         // now we need to add the edges from arrival events to the same stop && per footpath reachable stops departure
@@ -148,7 +149,7 @@ public:
 
             for (auto& event : departureEventAtToStop) {
                 if (timeAtStop <= data.events[event].time) {
-                    bobTheBuilder.addEdge(fromVertex, Vertex(event));
+                    if (event != fromVertex) bobTheBuilder.addEdge(fromVertex, Vertex(event)).set(TransferCost, 1);
                     return;
                 }
             }
@@ -196,7 +197,8 @@ public:
 
         Graph::printInfo(data.timeExpandedGraph);
 
-        for (StopId stop(0); stop < data.stopData.size(); ++stop) {
+#pragma omp parallel for
+        for (StopId stop = StopId(0); stop < data.stopData.size(); ++stop) {
             std::sort(data.arrEventsAtStop[stop].begin(), data.arrEventsAtStop[stop].end(),
                       [&](const size_t left, const size_t right) {
                 return data.events[left].time < data.events[right].time;
@@ -331,9 +333,9 @@ public:
 public:
     std::vector<RAPTOR::Stop> stopData;
     std::vector<Event> events;
-    std::vector<std::vector<size_t>> depEventsAtStop;
-    std::vector<std::vector<size_t>> arrEventsAtStop;
-    size_t numTrips;
+    std::vector<std::vector<std::size_t>> depEventsAtStop;
+    std::vector<std::vector<std::size_t>> arrEventsAtStop;
+    std::size_t numTrips;
 
     TimeExpandedGraph timeExpandedGraph;
 };

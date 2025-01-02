@@ -4,6 +4,7 @@
 
 #include "../../DataStructures/CSA/Data.h"
 #include "../../DataStructures/Graph/Graph.h"
+#include "../../DataStructures/Graph/Utils/IO.h"
 #include "../../DataStructures/GTFS/Data.h"
 #include "../../DataStructures/Intermediate/Data.h"
 #include "../../DataStructures/RAPTOR/Data.h"
@@ -166,6 +167,27 @@ public:
         data.printInfo();
         Graph::printInfo(data.timeExpandedGraph);
         data.serialize(outputFile);
+    }
+};
+
+class ExportTEGraphToDimacs : public ParameterizedCommand {
+public:
+    ExportTEGraphToDimacs(BasicShell& shell)
+        : ParameterizedCommand(shell, "exportTEGraphToDimacs",
+                               "Write the TE-Graph to a file in Dimacs format. As edge weights, the transfer cost is "
+                               "chosen (i.e., edges are weighted either 0 or 1).") {
+        addParameter("TE binary");
+        addParameter("Output file");
+    }
+
+    virtual void execute() noexcept {
+        const std::string inputFile = getParameter("TE binary");
+        const std::string outputFile = getParameter("Output file");
+
+        TE::Data data(inputFile);
+        data.printInfo();
+
+        Graph::toDimacs(outputFile, data.timeExpandedGraph, data.timeExpandedGraph[TransferCost]);
     }
 };
 

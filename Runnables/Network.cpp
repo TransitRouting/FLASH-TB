@@ -11,11 +11,14 @@ int main(int argc, char** argv) {
     checkAsserts();
     ::Shell::Shell shell;
     new ParseGTFS(shell);
+
     new GTFSToIntermediate(shell);
+
     new IntermediateToCSA(shell);
     new IntermediateToRAPTOR(shell);
     new IntermediateToTD(shell);
     new IntermediateToTE(shell);
+
     new BuildMultimodalRAPTORData(shell);
     new AddModeToMultimodalRAPTORData(shell);
     new BuildMultimodalTripBasedData(shell);
@@ -32,9 +35,12 @@ int main(int argc, char** argv) {
     new MakeOneHopTransfers(shell);
     new ApplyMaxTransferSpeed(shell);
     new ApplyConstantTransferSpeed(shell);
+
     new WriteIntermediateToCSV(shell);
     new WriteRAPTORToCSV(shell);
     new WriteTripBasedToCSV(shell);
+
+    new ExportTEGraphToDimacs(shell);
     shell.run();
     return 0;
 }

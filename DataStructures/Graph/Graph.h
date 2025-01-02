@@ -87,9 +87,11 @@ using TimeDependentRouteGraph = StaticGraph<WithRouteVertex, WithDurationFunctio
 
 // TE
 using WithStopVertex = List<Attribute<StopVertex, StopId>>;
+using WithTravelTimeAndTransferCost = List<Attribute<TravelTime, int>, Attribute<TransferCost, uint8_t>>;
 
-using DynamicTimeExpandedGraph = DynamicGraph<WithStopVertex, WithTravelTime>;
-using TimeExpandedGraph = StaticGraph<WithStopVertex, WithTravelTime>;
+using DynamicTimeExpandedGraph = DynamicGraph<WithStopVertex, WithTravelTimeAndTransferCost>;
+using EdgeListTimeExpandedGraph = EdgeList<WithStopVertex, WithTravelTimeAndTransferCost>;
+using TimeExpandedGraph = StaticGraph<WithStopVertex, WithTravelTimeAndTransferCost>;
 
 #include "Utils/Conversion.h"
 #include "Utils/IO.h"
