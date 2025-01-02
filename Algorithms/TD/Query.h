@@ -50,7 +50,7 @@ public:
     }
 
     template <AttributeNameType ATTRIBUTE_NAME>
-    EADijkstra(const GRAPH& graph, const AttributeNameWrapper<ATTRIBUTE_NAME> weight)
+    EADijkstra(const GRAPH& graph, const AttributeNameWrapper<ATTRIBUTE_NAME>& weight)
         : EADijkstra(graph, graph[weight]) {}
 
     EADijkstra(const GRAPH&&, const std::vector<int>&) = delete;
@@ -58,7 +58,7 @@ public:
     EADijkstra(const GRAPH&&) = delete;
 
     template <AttributeNameType ATTRIBUTE_NAME>
-    EADijkstra(const GRAPH&&, const AttributeNameWrapper<ATTRIBUTE_NAME>) = delete;
+    EADijkstra(const GRAPH&&, const AttributeNameWrapper<ATTRIBUTE_NAME>&) = delete;
 
     template <typename SETTLE = NO_OPERATION, typename STOP = NO_OPERATION, typename PRUNE_EDGE = NO_OPERATION>
     inline void run(const Vertex source, const int departureTime = 0, const Vertex target = noVertex,
@@ -133,7 +133,7 @@ public:
             const Vertex u = Vertex(uLabel - &(label[0]));
             if (u == target) [[unlikely]]
                 break;
-            for (const Edge& edge : graph.edgesFrom(u)) {
+            for (const Edge edge : graph.edgesFrom(u)) {
                 const Vertex v = graph.get(ToVertex, edge);
                 VertexLabel& vLabel = getLabel(v);
                 if (pruneEdge(u, edge)) continue;
@@ -177,13 +177,11 @@ public:
     inline bool visited(const Vertex vertex) const noexcept { return label[vertex].timeStamp == timeStamp; }
 
     inline int getDistance(const Vertex vertex) const noexcept {
-        if (visited(vertex)) return label[vertex].arrivalTime;
-        return -1;
+        return (visited(vertex) ? label[vertex].arrivalTime : -1);
     }
 
     inline Vertex getParent(const Vertex vertex) const noexcept {
-        if (visited(vertex)) return label[vertex].parent;
-        return noVertex;
+        return (visited(vertex) ? label[vertex].parent : noVertex);
     }
 
     inline std::set<Vertex> getChildren(const Vertex vertex) const noexcept {
@@ -199,10 +197,7 @@ public:
         return std::set<Vertex>();
     }
 
-    inline Vertex getQFront() const noexcept {
-        if (Q.empty()) return noVertex;
-        return Vertex(Q.front() - &(label[0]));
-    }
+    inline Vertex getQFront() const noexcept { return (Q.empty() ? noVertex : Vertex(Q.front() - &(label[0]))); }
 
     inline std::vector<Vertex> getReversePath(const Vertex to) const noexcept {
         std::vector<Vertex> path;
@@ -223,7 +218,8 @@ public:
 private:
     inline VertexLabel& getLabel(const Vertex vertex) noexcept {
         VertexLabel& result = label[vertex];
-        if (result.timeStamp != timeStamp) result.reset(timeStamp);
+        if (result.timeStamp != timeStamp) [[unlikely]]
+            result.reset(timeStamp);
         return result;
     }
 
