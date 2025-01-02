@@ -25,6 +25,8 @@
 #include "../../Algorithms/RAPTOR/ULTRABounded/UBMRAPTOR.h"
 #include "../../Algorithms/RAPTOR/ULTRAMcRAPTOR.h"
 #include "../../Algorithms/RAPTOR/ULTRARAPTOR.h"
+#include "../../Algorithms/TD/Query.h"
+#include "../../Algorithms/TE/Query.h"
 #include "../../Algorithms/TripBased/BoundedMcQuery/BoundedMcQuery.h"
 #include "../../Algorithms/TripBased/Query/ARCProfileQuery.h"
 #include "../../Algorithms/TripBased/Query/ARCTransitiveQuery.h"
@@ -38,6 +40,8 @@
 #include "../../DataStructures/Queries/Queries.h"
 #include "../../DataStructures/RAPTOR/Data.h"
 #include "../../DataStructures/RAPTOR/MultimodalData.h"
+#include "../../DataStructures/TD/Data.h"
+#include "../../DataStructures/TE/Data.h"
 #include "../../DataStructures/TripBased/Data.h"
 #include "../../DataStructures/TripBased/MultimodalData.h"
 #include "../../Shell/Shell.h"
@@ -998,6 +1002,53 @@ public:
         }
         algorithm.getProfiler().printStatistics();
         std::cout << "Avg. journeys: " << String::prettyDouble(numJourneys / n) << std::endl;
+    }
+};
+
+class RunTDDijkstraQueries : public ParameterizedCommand {
+public:
+    RunTDDijkstraQueries(BasicShell& shell)
+        : ParameterizedCommand(shell, "runTDDijkstraQueries", "Runs the given number of random TDD queries.") {
+        addParameter("TD input file");
+        addParameter("Number of queries");
+    }
+
+    virtual void execute() noexcept {
+        TD::Data data = TD::Data::FromBinary(getParameter("TD input file"));
+        data.printInfo();
+        TD::EADijkstra<TimeDependentRouteGraph, TD::AggregateProfiler> algorithm(data.timeDependentGraph,
+                                                                                 DurationFunction);
+
+        const size_t n = getParameter<size_t>("Number of queries");
+        const std::vector<StopQuery> queries = generateRandomStopQueries(data.numberOfStops(), n);
+
+        for (const StopQuery& query : queries) {
+            algorithm.run(query.source, query.departureTime, query.target);
+        }
+        algorithm.getProfiler().printStatistics();
+    }
+};
+
+class RunTEDijkstraQueries : public ParameterizedCommand {
+public:
+    RunTEDijkstraQueries(BasicShell& shell)
+        : ParameterizedCommand(shell, "runTEDijkstraQueries", "Runs the given number of random TDD queries.") {
+        addParameter("TE input file");
+        addParameter("Number of queries");
+    }
+
+    virtual void execute() noexcept {
+        TE::Data data = TE::Data::FromBinary(getParameter("TE input file"));
+        data.printInfo();
+        TE::Query<TE::AggregateProfiler> algorithm(data);
+
+        const size_t n = getParameter<size_t>("Number of queries");
+        const std::vector<StopQuery> queries = generateRandomStopQueries(data.numberOfStops(), n);
+
+        for (const StopQuery& query : queries) {
+            algorithm.run(query.source, query.departureTime, query.target);
+        }
+        algorithm.getProfiler().printStatistics();
     }
 };
 

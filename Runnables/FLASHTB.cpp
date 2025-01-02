@@ -25,6 +25,8 @@ int main(int argc, char** argv) {
     new MakeOneHopTransfers(shell);
     new IntermediateToRAPTOR(shell);
     new IntermediateToCSA(shell);
+    new IntermediateToTD(shell);
+    new IntermediateToTE(shell);
 
     new RAPTORToTripBased(shell);
     new ComputeTransitiveEventToEventShortcuts(shell);
@@ -38,6 +40,9 @@ int main(int argc, char** argv) {
     new RunTransitiveCSAQueries(shell);
     new RunTransitiveProfileCSAQueries(shell);
     new RunTransitiveTripBasedQueries(shell);
+
+    new RunTDDijkstraQueries(shell);
+    new RunTEDijkstraQueries(shell);
 
     new RunTransitiveProfileOneToAllTripBasedQueries(shell);
     new RunTransitiveProfileTripBasedQueries(shell);

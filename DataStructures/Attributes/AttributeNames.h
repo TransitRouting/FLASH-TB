@@ -92,7 +92,15 @@ using BundleSizeType = AttributeNameWrapper<27>;
 
 // Arc-Flag TB
 using ARCFlag = AttributeNameWrapper<28>;
-using UnknownType = AttributeNameWrapper<29>;
+
+using LocalLevel = AttributeNameWrapper<29>;
+using Hop = AttributeNameWrapper<30>;
+
+using DurationFunction = AttributeNameWrapper<31>;
+using TransferCost = AttributeNameWrapper<32>;
+using RouteVertex = AttributeNameWrapper<33>;
+using StopVertex = AttributeNameWrapper<34>;
+using UnknownType = AttributeNameWrapper<35>;
 // Ensure that Unknown is the last entry!
 
 } // namespace ImplementationDetail
@@ -126,6 +134,12 @@ constexpr ImplementationDetail::ProfileIndexType ProfileIndex;
 constexpr ImplementationDetail::OriginalEdgeType OriginalEdge;
 constexpr ImplementationDetail::BundleSizeType BundleSize;
 constexpr ImplementationDetail::ARCFlag ARCFlag;
+constexpr ImplementationDetail::LocalLevel LocalLevel;
+constexpr ImplementationDetail::Hop Hop;
+constexpr ImplementationDetail::DurationFunction DurationFunction;
+constexpr ImplementationDetail::TransferCost TransferCost;
+constexpr ImplementationDetail::RouteVertex RouteVertex;
+constexpr ImplementationDetail::StopVertex StopVertex;
 constexpr ImplementationDetail::UnknownType Unknown;
 // Ensure that Unknown is the last entry!
 
@@ -161,7 +175,13 @@ constexpr const char* AttributeNameStrings[] = {
     /* 26 */ "OriginalEdge",
     /* 27 */ "BundleSize",
     /* 28 */ "ARCFlag",
-    /* 29 */ "Unknown"
+    /* 29 */ "LocalLevel",
+    /* 30 */ "Hop",
+    /* 31 */ "DurationFunction",
+    /* 32 */ "TransferCost",
+    /* 33 */ "RouteVertex",
+    /* 34 */ "StopVertex",
+    /* 35 */ "Unknown"
     // Ensure that Unknown is the last entry!
 };
 
