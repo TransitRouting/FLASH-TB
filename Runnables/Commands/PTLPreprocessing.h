@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+#include "../../Algorithms/DepthFirstSearch.h"
 #include "../../DataStructures/PTL/Data.h"
 #include "../../DataStructures/TE/Data.h"
 #include "../../Helpers/MultiThreading.h"
