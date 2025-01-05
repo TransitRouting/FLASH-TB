@@ -111,14 +111,15 @@ public:
     }
 
     inline int scanHubsBinary(const std::vector<size_t>& arrEvents, const size_t left = 0) noexcept {
-        if (arrEvents.empty()) return -1;
+        if (arrEvents.empty()) [[unlikely]]
+            return -1;
         size_t i = left;
         size_t j = arrEvents.size() - 1;
 
         AssertMsg(i <= j, "Left and Right are not valid!");
 
         while (i < j) {
-            size_t mid = ((i + j) >> 1);
+            size_t mid = i + ((j - i) >> 1);
             AssertMsg(mid < arrEvents.size(), "Mid ( " << mid << " ) is out of bounds (" << arrEvents.size() << " )!");
             bool found = false;
 
