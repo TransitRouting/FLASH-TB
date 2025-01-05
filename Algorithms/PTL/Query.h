@@ -13,7 +13,7 @@ class Query {
 public:
     using Profiler = PROFILER;
 
-    Query(Data& data) : data(data) {
+    Query(Data& data) : data(data), lookup(data.numberOfStopEvents(), 0), generation(0) {
         profiler.registerPhases({PHASE_FIND_FIRST_VERTEX, PHASE_INSERT_HASH, PHASE_RUN});
         profiler.registerMetrics(
             {METRIC_INSERTED_HUBS, METRIC_CHECK_ARR_EVENTS, METRIC_CHECK_HUBS, METRIC_FOUND_SOLUTIONS});
@@ -71,11 +71,16 @@ public:
     inline void prepareSet() noexcept {
         AssertMsg(data.teData.isEvent(startingVertex), "First reachable node is not valid!");
 
-        hash.clear();
+        ++generation;
+        if (generation == 0) {
+            std::fill(lookup.begin(), lookup.end(), 0);
+            generation = 1;
+        }
 
-        for (auto& fwdHub : data.getFwdHubs(startingVertex)) {
-            hash.insert(fwdHub);
+        const auto& hubs = data.getFwdHubs(startingVertex);
 
+        for (std::size_t i = 0; i < hubs.size(); ++i) {
+            lookup[hubs[i]] = generation;
             profiler.countMetric(METRIC_INSERTED_HUBS);
         }
     }
@@ -101,7 +106,7 @@ public:
             for (const auto& hub : bwdLabels) {
                 profiler.countMetric(METRIC_CHECK_HUBS);
 
-                if (hash.find(hub) != hash.end()) [[unlikely]] {
+                if (lookup[hub] == generation) {
                     profiler.countMetric(METRIC_FOUND_SOLUTIONS);
                     return arrTime;
                 }
@@ -132,7 +137,7 @@ public:
             for (const auto& hub : bwdLabels) {
                 profiler.countMetric(METRIC_CHECK_HUBS);
 
-                if (hash.find(hub) != hash.end()) {
+                if (lookup[hub] == generation) {
                     j = mid;
                     found = true;
                     break;
@@ -152,6 +157,9 @@ public:
     inline const Profiler& getProfiler() const noexcept { return profiler; }
 
     Data& data;
+    std::vector<std::uint16_t> lookup;
+    std::uint16_t generation;
+
     Vertex startingVertex;
     std::unordered_set<PTL::Data::Hub> hash;
     Profiler profiler;

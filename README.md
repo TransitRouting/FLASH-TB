@@ -147,8 +147,8 @@ Avg. journeys  : 1.53
 
 Additionally, you can use ``PTL``, by loading computed hub labels and performing queries; see here an example on the Karlsruhe instance:
 ```
-> runPTLQueries ../Datasets/Karlsruhe/ptl.binary 10000
-Loading static graph from ../Datasets/Karlsruhe/ptl.binary.te.graph
+> runPTLQueries /home/patrick/Documents/FLASH-TB/Datasets/Karlsruhe/ptl.binary 10000
+Loading static graph from /home/patrick/Documents/FLASH-TB/Datasets/Karlsruhe/ptl.binary.te.graph
 PTL public transit data:
    Number of Stops:                 4,292
    Number of Trips:                93,980
@@ -173,16 +173,15 @@ Linear Search through Target Arrival Events:
 # Check Hubs                 : 2,468.05
 # Solutions                  : 0.95
 Find first reachable Vertex  : 0µs
-Building Hash-Hubs           : 3µs
-Run Query                    : 32µs
-Total Time                   : 36µs
+Building Hash-Hubs           : 0µs
+Run Query                    : 8µs
+Total Time                   : 10µs
 Binary Search through Target Arrival Events:
 # Inserted Hubs              : 75.07
 # Arrival Events             : 7.09
 # Check Hubs                 : 205.88
 # Solutions                  : 0.95
 Find first reachable Vertex  : 0µs
-Building Hash-Hubs           : 3µs
-Run Query                    : 3µs
-Total Time                   : 7µs
+Building Hash-Hubs           : 0µs
+Run Query                    : 1µs
 ```
