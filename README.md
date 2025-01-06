@@ -147,8 +147,8 @@ Avg. journeys  : 1.53
 
 Additionally, you can use ``PTL``, by loading computed hub labels and performing queries; see here an example on the Karlsruhe instance:
 ```
-> runPTLQueries /home/patrick/Documents/FLASH-TB/Datasets/Karlsruhe/ptl.binary 10000
-Loading static graph from /home/patrick/Documents/FLASH-TB/Datasets/Karlsruhe/ptl.binary.te.graph
+> runPTLQueries ../Datasets/Karlsruhe/ptl.binary 10000
+Loading static graph from ../Datasets/Karlsruhe/ptl.binary.te.graph
 PTL public transit data:
    Number of Stops:                 4,292
    Number of Trips:                93,980

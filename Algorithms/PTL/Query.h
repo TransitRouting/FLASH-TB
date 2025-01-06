@@ -28,8 +28,13 @@ public:
         profiler.start();
 
         profiler.startPhase();
-        prepareStartingVertex(source, departureTime);
+        bool foundStartingVertex = prepareStartingVertex(source, departureTime);
         profiler.donePhase(PHASE_FIND_FIRST_VERTEX);
+
+        if (!foundStartingVertex) [[unlikely]] {
+            profiler.done();
+            return -1;
+        }
 
         profiler.startPhase();
         prepareSet();
@@ -59,7 +64,7 @@ public:
         Vertex firstReachableNode = data.teData.getFirstReachableDepartureVertexAtStop(stop, time);
 
         // Did we reach any transfer node?
-        if (!data.teData.isEvent(firstReachableNode)) {
+        if (!data.teData.isEvent(firstReachableNode)) [[unlikely]] {
             return false;
         }
 
@@ -118,6 +123,7 @@ public:
     inline int scanHubsBinary(const std::vector<size_t>& arrEvents, const size_t left = 0) noexcept {
         if (arrEvents.empty()) [[unlikely]]
             return -1;
+
         size_t i = left;
         size_t j = arrEvents.size() - 1;
 
@@ -137,13 +143,11 @@ public:
             for (const auto& hub : bwdLabels) {
                 profiler.countMetric(METRIC_CHECK_HUBS);
 
-                if (lookup[hub] == generation) {
-                    j = mid;
-                    found = true;
-                    break;
-                }
+                found = (lookup[hub] == generation);
+                if (found) break;
             }
 
+            j = (found ? mid : j);
             i = (found ? i : mid + 1);
         }
 
