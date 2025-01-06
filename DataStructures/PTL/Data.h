@@ -28,6 +28,8 @@ public:
     Data(TE::Data& teData)
         : fwdVertices(teData.events.size() >> 1), bwdVertices(teData.events.size() >> 1), teData(teData) {}
 
+    // line starts with 'i' or 'o' (incoming or outgoing), then followed by the vertex id, and then the rest of the line
+    // are the hubs
     void readLabelFile(const std::string& fileName) noexcept {
         std::ifstream inFile(fileName);
 
@@ -35,6 +37,8 @@ public:
             std::cerr << "Error: Unable to open file " << fileName << " for reading.\n";
             return;
         }
+
+        clear();
 
         std::string line;
         std::size_t vertexIndex = 0;
@@ -51,49 +55,62 @@ public:
                 continue;
             }
 
-            Label hubs;
             std::istringstream iss(line.substr(1));
+            Hub currentVertex;
             Hub hub;
-            while (iss >> hub) {
-                hubs.push_back(hub);
+
+            if (!(iss >> currentVertex)) {
+                std::cerr << "Error: Failed to parse currentVertex in line: " << line << "\n";
+                continue;
             }
 
-            if (labelType == 'o' && teData.isDepartureEvent(Vertex(vertexIndex))) {
-                AssertMsg((vertexIndex >> 1) < fwdVertices.size(),
-                          "VertexIndex " << vertexIndex << " is out of bounds!");
-                fwdVertices[vertexIndex >> 1] = std::move(hubs);
-            } else if (labelType == 'i' && teData.isArrivalEvent(Vertex(vertexIndex))) {
-                AssertMsg(((vertexIndex - 1) >> 1) < bwdVertices.size(),
-                          "VertexIndex " << vertexIndex << " is out of bounds!");
-                bwdVertices[(vertexIndex - 1) >> 1] = std::move(hubs);
+            bool isDep = teData.isDepartureEvent(Vertex(currentVertex));
+
+            if ((isDep && labelType == 'o') || (!isDep && labelType == 'i')) {
+                vertexIndex = (isDep ? (currentVertex >> 1) : ((currentVertex - 1) >> 1));
+
+                AssertMsg(vertexIndex < fwdVertices.size() && vertexIndex < bwdVertices.size(),
+                          "Vertex is out of bounds");
+
+                auto& hubs = (isDep ? fwdVertices[vertexIndex] : bwdVertices[vertexIndex]);
+
+                hubs.reserve(70);
+
+                // Validate all hub values
+                while (iss >> hub) {
+                    hubs.push_back(hub);
+                }
+
+                hubs.shrink_to_fit();
+
+                if (iss.fail() && !iss.eof()) {
+                    std::cerr << "Error: Logical error on i/o operation while processing hubs in line: " << line
+                              << "\n";
+                }
             }
 
             vertexIndex += (labelType == 'i');
         }
 
         inFile.close();
-        if (inFile.fail()) {
-            std::cerr << "Error: Reading from file " << fileName << " failed.\n";
-        } else {
-            std::cout << "Labels loaded successfully from " << fileName << "\n";
-        }
+        sortLabels();
     }
 
     inline void clear() noexcept {
-        AssertMsg(fwdVertices.size() == (teData.numberOfTEVertices()), "Not the same size!");
-        AssertMsg(bwdVertices.size() == (teData.numberOfTEVertices()), "Not the same size!");
+        AssertMsg(fwdVertices.size() == (teData.numberOfTEVertices() >> 1), "Not the same size!");
+        AssertMsg(bwdVertices.size() == (teData.numberOfTEVertices() >> 1), "Not the same size!");
 
-        for (Vertex v = Vertex(0); v < (teData.numberOfTEVertices()); ++v) {
-            fwdVertices.clear();
-            bwdVertices.clear();
+        for (Vertex v = Vertex(0); v < (teData.numberOfTEVertices() >> 1); ++v) {
+            fwdVertices[v].clear();
+            bwdVertices[v].clear();
         }
     }
 
     inline void sortLabels() noexcept {
-        AssertMsg(fwdVertices.size() == (teData.numberOfTEVertices()), "Not the same size!");
-        AssertMsg(bwdVertices.size() == (teData.numberOfTEVertices()), "Not the same size!");
+        AssertMsg(fwdVertices.size() == (teData.numberOfTEVertices() >> 1), "Not the same size!");
+        AssertMsg(bwdVertices.size() == (teData.numberOfTEVertices() >> 1), "Not the same size!");
 
-        for (Vertex v = Vertex(0); v < (teData.numberOfTEVertices()); ++v) {
+        for (Vertex v = Vertex(0); v < (teData.numberOfTEVertices() >> 1); ++v) {
             std::sort(fwdVertices[v].begin(), fwdVertices[v].end());
             std::sort(bwdVertices[v].begin(), bwdVertices[v].end());
         }

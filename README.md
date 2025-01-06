@@ -148,7 +148,7 @@ Avg. journeys  : 1.53
 Additionally, you can use ``PTL``, by loading computed hub labels and performing queries; see here an example on the Karlsruhe instance:
 ```
 > runPTLQueries ../Datasets/Karlsruhe/ptl.binary 10000
-Loading static graph from ../Datasets/Karlsruhe/ptl.binary.te.graph
+Loading static graph from ../Datase0ts/Karlsruhe/ptl.binary.te.graph
 PTL public transit data:
    Number of Stops:                 4,292
    Number of Trips:                93,980
@@ -157,31 +157,32 @@ PTL public transit data:
    Number of TE Edges:         11,109,052
 Forward Labels Statistics:   
   Min Size:                             1
-  Max Size:                           288
-  Avg Size:                       82.5817
+  Max Size:                           262
+  Avg Size:                       82.5115
 Backward Labels Statistics:
   Max Size:                             1
-  Min Size:                           217
-  Avg Size:                       71.9992
-FWD # count:                    145394614
-BWD # count:                    126762937
-Both # count:                   272157551
+  Min Size:                           221
+  Avg Size:                       72.0288
+FWD # count:                    145271003
+BWD # count:                    126814911
+Both # count:                   272085914
    Total Size:                     1.40GB
 Linear Search through Target Arrival Events:
-# Inserted Hubs              : 75.07
-# Arrival Events             : 37.34
-# Check Hubs                 : 2,468.05
+# Inserted Hubs              : 74.71
+# Arrival Events             : 37.06
+# Check Hubs                 : 2,440.60
 # Solutions                  : 0.95
 Find first reachable Vertex  : 0µs
 Building Hash-Hubs           : 0µs
-Run Query                    : 8µs
-Total Time                   : 10µs
+Run Query                    : 7µs
+Total Time                   : 9µs
 Binary Search through Target Arrival Events:
-# Inserted Hubs              : 75.07
-# Arrival Events             : 7.09
-# Check Hubs                 : 205.88
+# Inserted Hubs              : 74.71
+# Arrival Events             : 7.05
+# Check Hubs                 : 175.66
 # Solutions                  : 0.95
 Find first reachable Vertex  : 0µs
 Building Hash-Hubs           : 0µs
-Run Query                    : 1µs
+Run Query                    : 0µs
+Total Time                   : 1µs
 ```
