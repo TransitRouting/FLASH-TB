@@ -10,6 +10,7 @@
 #include "../../Algorithms/CSA/HLCSA.h"
 #include "../../Algorithms/CSA/ProfileCSA.h"
 #include "../../Algorithms/CSA/ULTRACSA.h"
+#include "../../Algorithms/PTL/Query.h"
 #include "../../Algorithms/RAPTOR/Bounded/BoundedMcRAPTOR.h"
 #include "../../Algorithms/RAPTOR/DijkstraRAPTOR.h"
 #include "../../Algorithms/RAPTOR/HLRAPTOR.h"
@@ -37,6 +38,7 @@
 #include "../../Algorithms/TripBased/Query/Query.h"
 #include "../../Algorithms/TripBased/Query/TransitiveQuery.h"
 #include "../../DataStructures/CSA/Data.h"
+#include "../../DataStructures/PTL/Data.h"
 #include "../../DataStructures/Queries/Queries.h"
 #include "../../DataStructures/RAPTOR/Data.h"
 #include "../../DataStructures/RAPTOR/MultimodalData.h"
@@ -1049,6 +1051,34 @@ public:
             algorithm.run(query.source, query.departureTime, query.target);
         }
         algorithm.getProfiler().printStatistics();
+    }
+};
+
+class RunPTLQueries : public ParameterizedCommand {
+public:
+    RunPTLQueries(BasicShell& shell)
+        : ParameterizedCommand(shell, "runPTLQueries", "Runs the given number of random PTL queries.") {
+        addParameter("PTL input file");
+        addParameter("Number of queries");
+    }
+
+    virtual void execute() noexcept {
+        PTL::Data data(getParameter("PTL input file"));
+        data.printInfo();
+        PTL::Query<PTL::AggregateProfiler> algorithmLinear(data);
+        PTL::Query<PTL::AggregateProfiler> algorithmBinary(data);
+
+        const size_t n = getParameter<size_t>("Number of queries");
+        const std::vector<StopQuery> queries = generateRandomStopQueries(data.numberOfStops(), n);
+
+        for (const StopQuery& query : queries) {
+            algorithmLinear.template run<false>(query.source, query.departureTime, query.target);
+            algorithmBinary.run(query.source, query.departureTime, query.target);
+        }
+        std::cout << "Linear Search through Target Arrival Events:" << std::endl;
+        algorithmLinear.getProfiler().printStatistics();
+        std::cout << "Binary Search through Target Arrival Events:" << std::endl;
+        algorithmBinary.getProfiler().printStatistics();
     }
 };
 

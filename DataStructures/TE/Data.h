@@ -15,21 +15,20 @@
 #include "../CSA/Entities/Connection.h"
 #include "../Graph/Graph.h"
 #include "../Intermediate/Data.h"
+#include "../RAPTOR/Entities/Stop.h"
 
 namespace TE {
+struct Event {
+    size_t id;
+    StopId stop;
+    TripId trip;
+    int time;
+
+    Event(size_t id = -1, StopId stop = noStop, int time = -1, TripId trip = noTripId)
+        : id(id), stop(stop), trip(trip), time(time){};
+};
 
 class Data {
-private:
-    struct Event {
-        size_t id;
-        StopId stop;
-        TripId trip;
-        int time;
-
-        Event(size_t id = -1, StopId stop = noStop, int time = -1, TripId trip = noTripId)
-            : id(id), stop(stop), trip(trip), time(time){};
-    };
-
 public:
     Data(){};
 
