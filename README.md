@@ -7,31 +7,23 @@ This repository is based on the ULTRA framework. For more information, see [ULTR
 This repository contains the code for
 
 * *UnLimited TRAnsfers for Multi-Modal Route Planning: An Efficient Solution* Moritz Baum, Valentin Buchhold, Jonas Sauer, Dorothea Wagner, Tobias Zündorf In: Proceedings of the 27th Annual European Symposium on Algorithms (ESA'19), Leibniz International Proceedings in Informatics, pages 14:1–14:16, 2019 pdf arXiv
-* *Arc-Flags Meet Trip-Based Public Transit Routing (Arc-Flag TB)* 
-Ernestine Großmann, Jonas Sauer, Christian Schulz, Patrick Steil
-In: Proceedings of the 21st International Symposium on Experimental Algorithms (SEA 2023), Schloss Dagstuhl - Leibniz-Zentrum für Informatik, pages 16:1-16:18, 2023
-[pdf](https://drops.dagstuhl.de/opus/volltexte/2023/18366/pdf/LIPIcs-SEA-2023-16.pdf)
+* *FLASH-TB: Integrating Arc-Flags and Trip-Based Public Transit Routing* Ernestine Großmann, Jonas Sauer, Christian Schulz, Patrick Steil In: Transportation Science, INFORMS, 2024. DOI: 10.1287/trsc.2023.0481. An earlier version appeared in the Proceedings of the 21st International Symposium on Experimental Algorithms (SEA 2023).
 
 If you use this repository, please cite our work using
 
 ```
-@inproceedings{gromann_et_al:LIPIcs.SEA.2023.16,
-	title        = {{Arc-Flags Meet Trip-Based Public Transit Routing}},
-	author       = {Gro{\ss}mann, Ernestine and Sauer, Jonas and Schulz, Christian and Steil, Patrick},
-	year         = 2023,
-	booktitle    = {21st International Symposium on Experimental Algorithms (SEA 2023)},
-	publisher    = {Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik},
-	address      = {Dagstuhl, Germany},
-	series       = {Leibniz International Proceedings in Informatics (LIPIcs)},
-	volume       = 265,
-	pages        = {16:1--16:18},
-	doi          = {10.4230/LIPIcs.SEA.2023.16},
-	isbn         = {978-3-95977-279-2},
-	issn         = {1868-8969},
-	url          = {https://drops.dagstuhl.de/opus/volltexte/2023/18366},
-	editor       = {Georgiadis, Loukas},
-	urn          = {urn:nbn:de:0030-drops-183664},
-	annote       = {Keywords: Public transit routing, graph algorithms, algorithm engineering}
+@article{doi:10.1287/trsc.2023.0481,
+	title        = {FLASH-TB: Integrating Arc-Flags and Trip-Based Public Transit Routing},
+	author       = {Gro\ss{}mann, Ernestine and Sauer, Jonas and Schulz, Christian and Steil, Patrick and Witt, Sascha},
+	year         = {0},
+	journal      = {Transportation Science},
+	volume       = {0},
+	number       = {0},
+	pages        = {null},
+	doi          = {10.1287/trsc.2023.0481},
+	url          = {https://doi.org/10.1287/trsc.2023.0481},
+	eprint       = {https://doi.org/10.1287/trsc.2023.0481},
+	abstract     = {We present FLASH-TB, a journey-planning algorithm for public transit networks that combines trip-based public transit routing (TB) with the arc-flags speedup technique. The basic idea is simple: The network is partitioned into a configurable number of cells. For each cell and each possible transfer between two vehicles, the algorithm precomputes a flag that indicates whether the transfer is required to reach the cell. During a query, only flagged transfers are explored. Our algorithm improves on previous attempts to apply arc-flags to public transit networks, which saw limited success due to conflicting rules for pruning the search space. We show that these rules can be reconciled while still producing correct results. Because the number of cells is configurable, FLASH-TB offers a tradeoff between query time and memory consumption. It is significantly more space efficient than existing techniques with a comparable preprocessing time, which store generalized shortest-path trees: To match their query performance, it requires up to two orders of magnitude less memory. The fastest configuration of FLASH-TB achieves a speedup of more than two orders of magnitude over TB, offering submillisecond query times even on large countrywide networks.Funding: This work was supported by the Deutsche Forschungsgemeinschaft [Grants SCHU 2567/3-1 and WA 654/23-2].Supplemental Material: The online appendix is available at https://doi.org/10.1287/trsc.2023.0481.}
 }
 ```
 
